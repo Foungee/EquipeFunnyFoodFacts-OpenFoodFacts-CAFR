@@ -1,0 +1,1 @@
+# EquipeFunnyFoodFacts-OpenFoodFacts-CAFR
