@@ -1,6 +1,10 @@
 import express from "express";
+import pool from "./controllers/dbController.mjs";
 
 const app = express();
+const c = await pool.connect();
+console.log((await c.query("SELECT current_database(), version()")).rows);
+c.release();
 
 app.use(express.json());
 
