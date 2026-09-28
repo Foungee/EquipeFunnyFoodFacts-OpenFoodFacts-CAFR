@@ -1,19 +1,20 @@
 <script setup>
 import { RouterLink, RouterView } from 'vue-router'
-import HelloWorld from './components/HelloWorld.vue'
 </script>
 
 <template>
-  <header>
-    <img alt="Vue logo" class="logo" src="@/assets/logo.svg" width="125" height="125" />
+  <header class="site-header">
+    <div class="header-content">
+      <RouterLink to="/" class="brand" aria-label="Open Food Facts — accueil">
+        <img src="/off-logo-horizontal-light.svg" alt="Open Food Facts" class="brand-logo" />
+      </RouterLink>
 
-    <div class="wrapper">
-      <HelloWorld msg="You did it!" />
-
-      <nav>
-        <RouterLink to="/">Home</RouterLink>
-        <RouterLink to="/about">About</RouterLink>
+      <nav aria-label="Navigation principale">
+        <RouterLink to="/">Accueil</RouterLink>
+        <RouterLink to="/about">À propos</RouterLink>
       </nav>
+
+      <span class="region">🇨🇦 Québec, Canada · FR</span>
     </div>
   </header>
 
@@ -21,65 +22,68 @@ import HelloWorld from './components/HelloWorld.vue'
 </template>
 
 <style scoped>
-header {
-  line-height: 1.5;
-  max-height: 100vh;
+.site-header {
+  background: #f3eae5;
+  border-bottom: 1px solid #e5d5cb;
 }
 
-.logo {
+.header-content {
+  max-width: 1160px;
+  margin: 0 auto;
+  padding: 17px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+}
+
+.brand-logo {
   display: block;
-  margin: 0 auto 2rem;
+  width: 220px;
+  max-width: 100%;
+  height: auto;
+}
+
+.brand strong {
+  padding: 4px 6px;
+  border-radius: 4px;
+  background: #f58220;
+  color: white;
 }
 
 nav {
-  width: 100%;
-  font-size: 12px;
-  text-align: center;
-  margin-top: 2rem;
+  display: flex;
+  gap: 24px;
 }
 
-nav a.router-link-exact-active {
-  color: var(--color-text);
+nav a:hover {
+  text-decoration: underline;
 }
 
-nav a.router-link-exact-active:hover {
-  background-color: transparent;
+.region {
+  padding: 10px 15px;
+  border-radius: 30px;
+  background: #fff0e2;
+  color: #713613;
+  font-size: 14px;
+  font-weight: bold;
+  white-space: nowrap;
 }
 
-nav a {
-  display: inline-block;
-  padding: 0 1rem;
-  border-left: 1px solid var(--color-border);
-}
-
-nav a:first-of-type {
-  border: 0;
-}
-
-@media (min-width: 1024px) {
-  header {
-    display: flex;
-    place-items: center;
-    padding-right: calc(var(--section-gap) / 2);
-  }
-
-  .logo {
-    margin: 0 2rem 0 0;
-  }
-
-  header .wrapper {
-    display: flex;
-    place-items: flex-start;
+@media (max-width: 700px) {
+  .header-content {
     flex-wrap: wrap;
   }
 
-  nav {
-    text-align: left;
-    margin-left: -1rem;
-    font-size: 1rem;
 
-    padding: 1rem 0;
-    margin-top: 1rem;
+  .region {
+    font-size: 12px;
   }
 }
 </style>
