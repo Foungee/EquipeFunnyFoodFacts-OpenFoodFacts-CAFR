@@ -59,8 +59,8 @@ function soumettreRecherche() {
           </div>
 
           <div class="col-12 col-lg-5">
-            <div class="illustration">
-              <div class="leaf-background" aria-hidden="true">
+            <!-- <div class="illustration"> -->
+              <!-- <div class="leaf-background" aria-hidden="true">
                 <svg
                   class="maple-leaf"
                   viewBox="0 0 200 220"
@@ -73,12 +73,12 @@ function soumettreRecherche() {
                     fill="#d52b1e"
                   />
                 </svg>
-              </div>
-              <h2>Des produits à découvrir, simplement.</h2>
+              </div> -->
+              <!-- <h2>Des produits à découvrir, simplement.</h2>
               <p>
                 Cherchez un aliment et accédez aux informations utiles en quelques clics.
-              </p>
-            </div>
+              </p> -->
+            <!-- </div> -->
           </div>
         </div>
       </div>
