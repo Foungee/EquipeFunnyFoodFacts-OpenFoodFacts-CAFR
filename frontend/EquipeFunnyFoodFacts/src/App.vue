@@ -1,3 +1,4 @@
+
 <script setup>
 import { RouterLink, RouterView } from 'vue-router'
 </script>
@@ -5,13 +6,23 @@ import { RouterLink, RouterView } from 'vue-router'
 <template>
   <header class="site-header">
     <div class="header-content">
-      <RouterLink to="/" class="brand" aria-label="Open Food Facts — accueil">
-        <img src="/off-logo-horizontal-light.svg" alt="Open Food Facts" class="brand-logo" />
+      <RouterLink to="/" class="brand" aria-label="Accueil Open Food Facts">
+        <img
+          src="/off-logo-horizontal-light.svg"
+          alt="Open Food Facts"
+          class="brand-logo"
+        />
       </RouterLink>
 
       <nav aria-label="Navigation principale">
         <RouterLink to="/">Accueil</RouterLink>
-        <RouterLink to="/about">À propos</RouterLink>
+        <a
+          href="https://ca.openfoodfacts.org/contribute"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Contribuer
+        </a>
       </nav>
 
       <span class="region">🇨🇦 Québec, Canada · FR</span>
@@ -37,7 +48,6 @@ import { RouterLink, RouterView } from 'vue-router'
   gap: 20px;
 }
 
-
 .brand {
   display: inline-flex;
   align-items: center;
@@ -50,19 +60,14 @@ import { RouterLink, RouterView } from 'vue-router'
   height: auto;
 }
 
-.brand strong {
-  padding: 4px 6px;
-  border-radius: 4px;
-  background: #f58220;
-  color: white;
-}
-
 nav {
   display: flex;
+  align-items: center;
   gap: 24px;
 }
 
-nav a:hover {
+nav a:hover,
+nav a:focus-visible {
   text-decoration: underline;
 }
 
@@ -81,6 +86,9 @@ nav a:hover {
     flex-wrap: wrap;
   }
 
+  .brand-logo {
+    width: 180px;
+  }
 
   .region {
     font-size: 12px;
