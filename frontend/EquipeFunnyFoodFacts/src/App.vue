@@ -35,7 +35,7 @@ import { RouterLink, RouterView } from 'vue-router'
   <div class="footer-content">
     <p>Projet étudiant utilisant les données d’Open Food Facts.</p>
     <a href="https://ca.openfoodfacts.org/" target="_blank" rel="noopener noreferrer">
-      Découvrir Open Food Facts ↗
+      Découvrir Open Food Facts =>
     </a>
   </div>
 </footer>

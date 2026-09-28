@@ -1,6 +1,8 @@
 <script setup>
 import { ref } from 'vue'
 
+ 
+
 const recherche = ref('')
 const messageRecherche = ref('')
 
@@ -102,7 +104,8 @@ function soumettreRecherche() {
               class="product-photo"
             />
             <h3>{{ produit.nom }}</h3>
-            <a :href="`/produit/${produit.code}`">Voir la fiche →</a>
+            <a  :href="`/produit/${produit.code}`"> <i class="bi bi-eye-fill"></i> Voir la fiche  </a>
+            
           </div>
         </article>
       </div>
@@ -120,7 +123,7 @@ function soumettreRecherche() {
         target="_blank"
         rel="noopener noreferrer"
       >
-        Contribuer au projet ↗
+        Contribuer au projet 
       </a>
     </section>
   </main>
