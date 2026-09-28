@@ -30,6 +30,14 @@ import { RouterLink, RouterView } from 'vue-router'
   </header>
 
   <RouterView />
+  <footer class="site-footer">
+  <div class="footer-content">
+    <p>Projet étudiant utilisant les données d’Open Food Facts.</p>
+    <a href="https://ca.openfoodfacts.org/" target="_blank" rel="noopener noreferrer">
+      Découvrir Open Food Facts ↗
+    </a>
+  </div>
+</footer>
 </template>
 
 <style scoped>
@@ -58,6 +66,36 @@ import { RouterLink, RouterView } from 'vue-router'
   width: 220px;
   max-width: 100%;
   height: auto;
+}
+.site-footer {
+  border-top: 1px solid #e5d5cb;
+  background: #f3eae5;
+}
+
+.footer-content {
+  max-width: 1160px;
+  margin: 0 auto;
+  padding: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.footer-content p {
+  margin: 0;
+}
+
+.footer-content a {
+  color: #713613;
+  font-weight: bold;
+}
+
+@media (max-width: 700px) {
+  .footer-content {
+    flex-direction: column;
+    align-items: flex-start;
+  }
 }
 
 nav {
