@@ -1,85 +1,135 @@
+
 <script setup>
 import { RouterLink, RouterView } from 'vue-router'
-import HelloWorld from './components/HelloWorld.vue'
 </script>
 
 <template>
-  <header>
-    <img alt="Vue logo" class="logo" src="@/assets/logo.svg" width="125" height="125" />
+  <header class="site-header">
+    <div class="header-content">
+      <RouterLink to="/" class="brand" aria-label="Accueil Open Food Facts">
+        <img
+          src="/off-logo-horizontal-light.svg"
+          alt="Open Food Facts"
+          class="brand-logo"
+        />
+      </RouterLink>
 
-    <div class="wrapper">
-      <HelloWorld msg="You did it!" />
-
-      <nav>
-        <RouterLink to="/">Home</RouterLink>
-        <RouterLink to="/about">About</RouterLink>
+      <nav aria-label="Navigation principale">
+        <RouterLink to="/">Accueil</RouterLink>
+        <a
+          href="https://ca.openfoodfacts.org/contribute"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Contribuer
+        </a>
       </nav>
+
+      <span class="region">🇨🇦 Québec, Canada · FR</span>
     </div>
   </header>
 
   <RouterView />
+  <footer class="site-footer">
+  <div class="footer-content">
+    <p>Projet étudiant utilisant les données d’Open Food Facts.</p>
+    <a href="https://ca.openfoodfacts.org/" target="_blank" rel="noopener noreferrer">
+      Découvrir Open Food Facts ↗
+    </a>
+  </div>
+</footer>
 </template>
 
 <style scoped>
-header {
-  line-height: 1.5;
-  max-height: 100vh;
+.site-header {
+  background: #f3eae5;
+  border-bottom: 1px solid #e5d5cb;
 }
 
-.logo {
+.header-content {
+  max-width: 1160px;
+  margin: 0 auto;
+  padding: 17px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+}
+
+.brand-logo {
   display: block;
-  margin: 0 auto 2rem;
+  width: 220px;
+  max-width: 100%;
+  height: auto;
+}
+.site-footer {
+  border-top: 1px solid #e5d5cb;
+  background: #f3eae5;
+}
+
+.footer-content {
+  max-width: 1160px;
+  margin: 0 auto;
+  padding: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.footer-content p {
+  margin: 0;
+}
+
+.footer-content a {
+  color: #713613;
+  font-weight: bold;
+}
+
+@media (max-width: 700px) {
+  .footer-content {
+    flex-direction: column;
+    align-items: flex-start;
+  }
 }
 
 nav {
-  width: 100%;
-  font-size: 12px;
-  text-align: center;
-  margin-top: 2rem;
+  display: flex;
+  align-items: center;
+  gap: 24px;
 }
 
-nav a.router-link-exact-active {
-  color: var(--color-text);
+nav a:hover,
+nav a:focus-visible {
+  text-decoration: underline;
 }
 
-nav a.router-link-exact-active:hover {
-  background-color: transparent;
+.region {
+  padding: 10px 15px;
+  border-radius: 30px;
+  background: #fff0e2;
+  color: #713613;
+  font-size: 14px;
+  font-weight: bold;
+  white-space: nowrap;
 }
 
-nav a {
-  display: inline-block;
-  padding: 0 1rem;
-  border-left: 1px solid var(--color-border);
-}
-
-nav a:first-of-type {
-  border: 0;
-}
-
-@media (min-width: 1024px) {
-  header {
-    display: flex;
-    place-items: center;
-    padding-right: calc(var(--section-gap) / 2);
-  }
-
-  .logo {
-    margin: 0 2rem 0 0;
-  }
-
-  header .wrapper {
-    display: flex;
-    place-items: flex-start;
+@media (max-width: 700px) {
+  .header-content {
     flex-wrap: wrap;
   }
 
-  nav {
-    text-align: left;
-    margin-left: -1rem;
-    font-size: 1rem;
+  .brand-logo {
+    width: 180px;
+  }
 
-    padding: 1rem 0;
-    margin-top: 1rem;
+  .region {
+    font-size: 12px;
   }
 }
 </style>
