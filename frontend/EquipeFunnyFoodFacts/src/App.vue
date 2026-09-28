@@ -23,6 +23,7 @@ import { RouterLink, RouterView } from 'vue-router'
         >
           Contribuer
         </a>
+         <RouterLink to="/produit/6191509905058">Fiche de produit</RouterLink>
       </nav>
 
       <span class="region">🇨🇦 Québec, Canada · FR</span>
