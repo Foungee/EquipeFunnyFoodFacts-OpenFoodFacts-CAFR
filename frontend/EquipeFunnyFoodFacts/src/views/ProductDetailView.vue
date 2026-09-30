@@ -11,7 +11,7 @@
     <div class="produit-grid">
       <div class="produit-photos">
         <div class="photo-principale">
-          <span>Photo produit (recto)</span>
+          <img :src="produit.image" :alt="produit.descriptionImage" class="photo-produit" />
         </div>
         <div class="miniatures">
           <div class="miniature"><span>verso</span></div>
@@ -58,20 +58,11 @@
 
 <script setup>
 import { useRoute } from 'vue-router'
+import { produits } from '../data/produits'
 
 const route = useRoute()
-console.log('id du produit dans l\'URL :', route.params.id)
 
-const produit = {
-  nom: 'Yogourt grec nature 2 %',
-  marque: 'Compliments',
-  format: '750 g',
-  categorie: 'Yogourts',
-  codeBarre: '0 62639 40182 6',
-  nutriScore: 'B',
-  novaGroupe: 1,
-  ecoScore: 'A',
-}
+const produit = produits.find((p) => p.code === route.params.id) || produits[0]
 
 const couleursScoreLettre = {
   A: '#038141',
@@ -264,5 +255,11 @@ function couleurNova(groupe) {
   color: white;
   font-weight: bold;
   font-size: 18px;
+}
+.photo-produit {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  padding: 20px;
 }
 </style>
