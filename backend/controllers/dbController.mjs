@@ -13,4 +13,13 @@ const pool = new pg.Pool({
   idleTimeoutMillis: 5000,
 });
 
-export default pool;
+export async function query(sql, params = []) {
+  const c = await pool.connect();
+  try {
+    return (await c.query(sql, params)).rows;
+  } finally {
+    c.release();
+  }
+}
+
+export default query;

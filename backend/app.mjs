@@ -1,12 +1,11 @@
 import express from "express";
-import pool from "./controllers/dbController.mjs";
+import produitsRoutes from "./routes/produits.mjs";
 
 const app = express();
-const c = await pool.connect();
-console.log((await c.query("SELECT current_database(), version()")).rows);
-c.release();
 
 app.use(express.json());
+
+app.use("/produits", produitsRoutes);
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
