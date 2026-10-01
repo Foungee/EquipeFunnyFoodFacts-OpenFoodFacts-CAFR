@@ -18,14 +18,15 @@ const router = createRouter({
       component: () => import('../views/AboutView.vue'),
     },
     {
-      path:'/produit/:id',
+      path: '/produit/:id',
       name: 'product-detail',
-       component: () => import('../views/ProductDetailView.vue'),
+      component: () => import('../views/ProductDetailView.vue'),
     },
+    {
       path: '/resultat',
       name: 'resultat',
       component: () => import('../views/resultatView.vue'),
-    }
+    },
   ],
 })
 
