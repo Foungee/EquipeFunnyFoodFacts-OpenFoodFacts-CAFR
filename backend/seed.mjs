@@ -13,9 +13,37 @@ try {
   await connection.run(`
     CREATE or 
     REPLACE 
-    TABLE produits 
-    AS SELECT * 
-    FROM read_parquet('https://huggingface.co/datasets/offCanada/openfoodfacts-canada/resolve/main/openfoodfacts_canada.parquet')`);
+    TABLE metadata 
+    AS SELECT *
+    FROM read_parquet('res/product_metadata.parquet')`);
+
+  await connection.run(`
+    CREATE or 
+    REPLACE 
+    TABLE groups 
+    AS SELECT *
+    FROM read_parquet('res/product_groups.parquet')`);
+
+  await connection.run(`
+    CREATE or 
+    REPLACE 
+    TABLE nutrition 
+    AS SELECT *
+    FROM read_parquet('res/product_nutrition.parquet')`);
+  
+  await connection.run(`
+    CREATE or 
+    REPLACE 
+    TABLE scores 
+    AS SELECT *
+    FROM read_parquet('res/product_scores.parquet')`);
+    
+  await connection.run(`
+    CREATE or 
+    REPLACE 
+    TABLE variants 
+    AS SELECT *
+    FROM read_parquet('res/product_variants.parquet')`);
 
   const check = await connection.runAndReadAll(
     "SELECT count(*) AS total FROM produits",

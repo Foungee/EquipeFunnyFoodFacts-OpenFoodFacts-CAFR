@@ -13,6 +13,8 @@ npm-debug.log*
 dist/
 dist-ssr/
 
+res/
+
 # OS
 .DS_Store
 
