@@ -33,17 +33,17 @@ export async function getProduitByCode(req, res, next) {
 export async function getProduit(req, res, next) {
   try {
     const rows = await query(
-      `SELECT 
+      `SELECT
         m.title AS nom,
         m.brand AS marque,
         m.image_url AS image,
         m.price AS prix,
         s.taxonomy AS categorie,
         s.nutri_score_status AS "nutriScore",
-        n.energy_kcal_per_100g AS calories,
+        n.calories_per_100g AS calories,
         n.proteins_per_100g AS proteines,
-        n.fat_per_100g AS lipides,
-        n.carbohydrates_per_100g AS glucides
+        n.fat_g_per_100g AS lipides,
+        n.carbohydrate_g_per_100g AS glucides
        FROM my_db.main.metadata m
        LEFT JOIN my_db.main.scores s ON s.external_id = m.external_id
        LEFT JOIN my_db.main.nutrition n ON n.external_id = m.external_id
@@ -67,7 +67,7 @@ export async function getProduits(req, res, next) {
     const searchParam = req.query.recherche || req.query.search;
     const { tri, nutriScore, categorie, limit = 15 } = req.query;
     let requete = `
-      SELECT 
+      SELECT
         m.external_id AS id,
         m.title AS nom,
         m.brand AS marque,
