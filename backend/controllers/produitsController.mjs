@@ -41,7 +41,7 @@ export async function getProduit(req, res, next) {
         s.taxonomy AS categorie,
         s.nutri_score_status AS "nutriScore",
         n.calories_per_100g AS calories,
-        n.proteins_g_per_100g AS proteines,
+        n.protein_g_per_100g AS proteines,
         n.fat_g_per_100g AS lipides,
         n.carbohydrate_g_per_100g AS glucides
        FROM my_db.main.metadata m
