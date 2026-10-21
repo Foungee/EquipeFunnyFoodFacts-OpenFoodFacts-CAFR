@@ -1,4 +1,3 @@
-
 <script setup>
 import { RouterLink, RouterView } from 'vue-router'
 </script>
@@ -24,7 +23,7 @@ import { RouterLink, RouterView } from 'vue-router'
         >
           Contribuer
         </a>
-         <RouterLink to="/produit/6191509905058">Fiche de produit</RouterLink>
+         <RouterLink to="/produit/957302EA">Fiche de produit</RouterLink>
       </nav>
 
       <span class="region">🇨🇦 Québec, Canada · FR</span>
