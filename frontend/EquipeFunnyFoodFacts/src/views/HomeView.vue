@@ -1,31 +1,74 @@
 <script setup>
-import { ref } from 'vue'
+// import { ref } from 'vue'
+import { onMounted, ref } from 'vue'
 
- 
+
 
 const recherche = ref('')
 const messageRecherche = ref('')
 
-const produits = [
-  {
-    code: '6191509905058',
-    nom: 'Huile d’olive Terra Delyssa',
-    image: '/produits/huile-terra-delyssa.jpg',
-    descriptionImage: 'Bouteille d’huile d’olive Terra Delyssa',
-  },
-  {
-    code: '0064100271913',
-    nom: 'Céréales All-Bran Buds',
-    image: '/produits/cereales-all-bran.jpg',
-    descriptionImage: 'Boîte de céréales All-Bran Buds',
-  },
-  {
-    code: '0068400662600',
-    nom: 'Mayonnaise Hellmann’s',
-    image: '/produits/mayonnaise-hellmanns.jpg',
-    descriptionImage: 'Pot de mayonnaise Hellmann’s',
-  },
-]
+// const produits = [
+//   {
+//     code: '6191509905058',
+//     nom: 'Huile d’olive Terra Delyssa',
+//     image: '/produits/huile-terra-delyssa.jpg',
+//     descriptionImage: 'Bouteille d’huile d’olive Terra Delyssa',
+//   },
+//   {
+//     code: '0064100271913',
+//     nom: 'Céréales All-Bran Buds',
+//     image: '/produits/cereales-all-bran.jpg',
+//     descriptionImage: 'Boîte de céréales All-Bran Buds',
+//   },
+//   {
+//     code: '0068400662600',
+//     nom: 'Mayonnaise Hellmann’s',
+//     image: '/produits/mayonnaise-hellmanns.jpg',
+//     descriptionImage: 'Pot de mayonnaise Hellmann’s',
+//   },
+// ]
+
+const produits = ref([])
+const chargement = ref(true)
+const erreurProduits = ref('')
+
+async function chargerProduits() {
+  chargement.value = true
+  erreurProduits.value = ''
+
+  try {
+    const parametres = new URLSearchParams({
+      countries_tags: 'en:canada',
+      page: '1',
+      page_size: '12',
+      fields: 'code,product_name_fr,product_name,brands,image_front_small_url',
+    })
+      const reponse = await fetch(
+  `/api-off/api/v2/search?${parametres}`,
+)
+    
+
+    if (!reponse.ok) {
+      throw new Error(`Erreur HTTP ${reponse.status}`)
+    }
+
+    const donnees = await reponse.json()
+
+    produits.value = (donnees.products ?? []).map((produit) => ({
+      code: produit.code,
+      nom: produit.product_name_fr || produit.product_name || 'Nom non renseigné',
+      marque: produit.brands || '',
+      image: produit.image_front_small_url || '',
+    }))
+  } catch (erreur) {
+    console.error('Chargement des produits :', erreur)
+    erreurProduits.value = 'Impossible de charger les produits. Réessayez.'
+  } finally {
+    chargement.value = false
+  }
+}
+
+onMounted(chargerProduits)
 
 function soumettreRecherche() {
   if (!recherche.value.trim()) return
@@ -45,13 +88,8 @@ function soumettreRecherche() {
               <label for="produit" class="visually-hidden">
                 Nom ou code-barres du produit
               </label>
-              <input
-                id="produit"
-                v-model="recherche"
-                type="search"
-                placeholder="Nom du produit ou code-barres…"
-                required
-              />
+              <input id="produit" v-model="recherche" type="search" placeholder="Nom du produit ou code-barres…"
+                required />
               <button type="submit">Rechercher</button>
             </form>
 
@@ -60,31 +98,35 @@ function soumettreRecherche() {
             </p>
           </div>
 
-         
+
         </div>
       </div>
     </section>
 
-    
+
 
     <section class="produits container py-5" aria-labelledby="titre-produits">
       <h2 id="titre-produits">Quelques produits à découvrir</h2>
-     
+      <p v-if="chargement" role="status">Chargement des produits…</p>
+
+      <div v-else-if="erreurProduits" role="alert">
+        <p>{{ erreurProduits }}</p>
+        <button type="button" @click="chargerProduits">Réessayer</button>
+      </div>
+
+      <p v-else-if="!produits.length">
+        Aucun produit disponible pour le moment.
+      </p>
+
       <div class="row g-4">
-        <article
-          v-for="produit in produits"
-          :key="produit.code"
-          class="col-12 col-md-4"
-        >
+        <article v-for="produit in produits" :key="produit.code" class="col-12 col-md-4">
           <div class="product-card">
-            <img
-              :src="produit.image"
-              :alt="produit.descriptionImage"
-              class="product-photo"
-            />
+            <!-- <img :src="produit.image" :alt="produit.descriptionImage" class="product-photo" /> -->
+            <img v-if="produit.image" :src="produit.image" :alt="produit.nom" class="product-photo" loading="lazy" />
+            <p v-else class="product-photo">Image non disponible</p>
             <h3>{{ produit.nom }}</h3>
-            <a  :href="`/produit/${produit.code}`"> <i class="bi bi-eye-fill"></i> Voir la fiche  </a>
-            
+            <a :href="`/produit/${produit.code}`"> <i class="bi bi-eye-fill"></i> Voir la fiche </a>
+
           </div>
         </article>
       </div>
@@ -97,12 +139,8 @@ function soumettreRecherche() {
           Chacun peut aider à enrichir les informations sur les produits alimentaires.
         </p>
       </div>
-      <a
-        href="https://ca.openfoodfacts.org/contribute"
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        Contribuer au projet 
+      <a href="https://ca.openfoodfacts.org/contribute" target="_blank" rel="noopener noreferrer">
+        Contribuer au projet
       </a>
     </section>
   </main>
@@ -213,7 +251,7 @@ h1 span {
   margin: 0;
 }
 
-.contribution > a {
+.contribution>a {
   flex-shrink: 0;
   padding: 14px 18px;
   border: 1px solid #dabca9;
