@@ -25,8 +25,15 @@
         <h1 class="produit-nom">{{ produit.nom }}</h1>
         <p class="code-barre">{{ produit.codeBarre }}</p>
 
-        <div class="actions">
-          <button type="button" class="btn-principal">Ajouter au comparateur</button>
+               <div class="actions">
+          <button
+            type="button"
+            class="btn-principal"
+            :disabled="comparateur.estDansComparateur(route.params.id)"
+            @click="ajouterAuComparateur"
+          >
+            {{ comparateur.estDansComparateur(route.params.id) ? 'Déjà dans le comparateur' : 'Ajouter au comparateur' }}
+          </button>
           <button type="button" class="btn-secondaire">Enregistrer</button>
           <button type="button" class="btn-secondaire">Corriger la fiche</button>
         </div>
@@ -59,10 +66,13 @@
 <script setup>
 import { useRoute } from 'vue-router'
 import { produits } from '../data/produits'
+import { useComparateurStore } from '../stores/comparateur'
 
 const route = useRoute()
 
 const produit = produits.find((p) => p.code === route.params.id) || produits[0]
+
+const comparateur = useComparateurStore()
 
 const couleursScoreLettre = {
   A: '#038141',
@@ -86,6 +96,11 @@ function couleurScore(lettre) {
 function couleurNova(groupe) {
   return couleursNova[groupe] || '#67594f'
 }
+
+function ajouterAuComparateur() {
+  comparateur.ajouter({ id: route.params.id, ...produit.value })
+}
+
 </script>
 
 <style scoped>

@@ -27,6 +27,11 @@ const router = createRouter({
       name: 'resultat',
       component: () => import('../views/resultatView.vue'),
     },
+        {
+      path: '/comparateur',
+      name: 'comparateur',
+      component: () => import('../views/ComparateurView.vue'),
+    },
   ],
 })
 
