@@ -60,28 +60,7 @@ function soumettreRecherche() {
             </p>
           </div>
 
-          <div class="col-12 col-lg-5">
-            <!-- <div class="illustration"> -->
-              <!-- <div class="leaf-background" aria-hidden="true">
-                <svg
-                  class="maple-leaf"
-                  viewBox="0 0 200 220"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    d="M100 8 116 48 132 35 130 66 163 63 152 85 179 99
-                       137 127 145 149 108 141 105 207 95 207 92 141
-                       55 149 63 127 21 99 48 85 37 63 70 66 68 35 84 48Z"
-                    fill="#d52b1e"
-                  />
-                </svg>
-              </div> -->
-              <!-- <h2>Des produits à découvrir, simplement.</h2>
-              <p>
-                Cherchez un aliment et accédez aux informations utiles en quelques clics.
-              </p> -->
-            <!-- </div> -->
-          </div>
+         
         </div>
       </div>
     </section>

@@ -1,4 +1,3 @@
-
 <script setup>
 import { RouterLink, RouterView } from 'vue-router'
 </script>
@@ -7,25 +6,23 @@ import { RouterLink, RouterView } from 'vue-router'
   <header class="site-header">
     <div class="header-content">
       <RouterLink to="/" class="brand" aria-label="Accueil Open Food Facts">
-        <img
-          src="/off-logo-horizontal-light.svg"
-          alt="Open Food Facts"
-          class="brand-logo"
-        />
+        <img src="/off-logo-horizontal-light.svg" alt="Open Food Facts" class="brand-logo" />
       </RouterLink>
 
       <nav aria-label="Navigation principale">
         <RouterLink to="/">Accueil</RouterLink>
-        <RouterLink to="/resultat">Résultats</RouterLink>
-        <a
-          href="https://ca.openfoodfacts.org/contribute"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
+
+        <RouterLink to="/resultat">Produits</RouterLink>
+
+        <a href="https://ca.openfoodfacts.org/contribute" target="_blank" rel="noopener noreferrer">
           Contribuer
         </a>
           <RouterLink to="/produit/957302EA">Fiche de produit</RouterLink>
           <RouterLink to="/comparateur">Comparateur</RouterLink>
+
+        <a href="https://ca.openfoodfacts.org/data" target="_blank" rel="noopener noreferrer">
+          Données ouvertes
+        </a>
       </nav>
 
       <span class="region">🇨🇦 Québec, Canada · FR</span>
@@ -34,13 +31,13 @@ import { RouterLink, RouterView } from 'vue-router'
 
   <RouterView />
   <footer class="site-footer">
-  <div class="footer-content">
-    <p>Projet étudiant utilisant les données d’Open Food Facts.</p>
-    <a href="https://ca.openfoodfacts.org/" target="_blank" rel="noopener noreferrer">
-      Découvrir Open Food Facts =>
-    </a>
-  </div>
-</footer>
+    <div class="footer-content">
+      <p>Projet étudiant utilisant les données d’Open Food Facts.</p>
+      <a href="https://ca.openfoodfacts.org/" target="_blank" rel="noopener noreferrer">
+        Découvrir Open Food Facts =>
+      </a>
+    </div>
+  </footer>
 </template>
 
 <style scoped>
@@ -70,6 +67,7 @@ import { RouterLink, RouterView } from 'vue-router'
   max-width: 100%;
   height: auto;
 }
+
 .site-footer {
   border-top: 1px solid #e5d5cb;
   background: #f3eae5;
@@ -103,6 +101,7 @@ import { RouterLink, RouterView } from 'vue-router'
 
 nav {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 24px;
 }

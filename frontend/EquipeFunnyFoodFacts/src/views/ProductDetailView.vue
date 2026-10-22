@@ -3,29 +3,27 @@
     <nav class="fil-ariane" aria-label="Fil d'Ariane">
       <a href="/">Accueil</a>
       <span class="separateur">›</span>
-      <a href="#">{{ produit.categorie }}</a>
-      <span class="separateur">›</span>
-      <span class="fil-ariane-actuel">{{ produit.nom }}</span>
+      <span class="fil-ariane-actuel">{{ produit?.nom }}</span>
     </nav>
 
-    <div class="produit-grid">
+    <p v-if="chargement">Chargement du produit…</p>
+    <p v-else-if="erreur">{{ erreur }}</p>
+
+    <div v-else class="produit-grid">
       <div class="produit-photos">
         <div class="photo-principale">
-          <img :src="produit.image" :alt="produit.descriptionImage" class="photo-produit" />
-        </div>
-        <div class="miniatures">
-          <div class="miniature"><span>verso</span></div>
-          <div class="miniature"><span>ingrédients</span></div>
-          <div class="miniature"><span>nutrition</span></div>
+          <img :src="produit.image" :alt="produit.nom" class="photo-produit" />
         </div>
       </div>
 
       <div class="produit-info">
-        <p class="marque-format">{{ produit.marque }} &middot; {{ produit.format }}</p>
+        <p class="marque-format">
+          {{ produit.marque }} &middot; {{ produit.categorie || 'Catégorie non précisée' }}
+        </p>
         <h1 class="produit-nom">{{ produit.nom }}</h1>
-        <p class="code-barre">{{ produit.codeBarre }}</p>
+        <p class="code-barre">{{ produit.prix ? `${produit.prix.toFixed(2)} $` : 'Prix non disponible' }}</p>
 
-               <div class="actions">
+        <div class="actions">
           <button
             type="button"
             class="btn-principal"
@@ -41,22 +39,18 @@
         <div class="indicateurs">
           <div class="indicateur">
             <p class="indicateur-titre">Nutri-Score</p>
-            <span class="indicateur-badge" :style="{ background: couleurScore(produit.nutriScore) }">
-              {{ produit.nutriScore }}
-            </span>
+            <p class="indicateur-texte">{{ texteNutriScore(produit.nutriScore) }}</p>
           </div>
-          <div class="indicateur">
-            <p class="indicateur-titre">Groupe NOVA</p>
-            <span class="indicateur-badge" :style="{ background: couleurNova(produit.novaGroupe) }">
-              {{ produit.novaGroupe }}
-            </span>
-          </div>
-          <div class="indicateur">
-            <p class="indicateur-titre">Éco-Score</p>
-            <span class="indicateur-badge" :style="{ background: couleurScore(produit.ecoScore) }">
-              {{ produit.ecoScore }}
-            </span>
-          </div>
+        </div>
+
+        <div class="nutrition">
+          <h2>Valeurs nutritives (pour 100 g)</h2>
+          <ul class="nutrition-liste">
+            <li><span>Calories</span><span>{{ valeur(produit.calories, 'kcal') }}</span></li>
+            <li><span>Protéines</span><span>{{ valeur(produit.proteines, 'g') }}</span></li>
+            <li><span>Lipides</span><span>{{ valeur(produit.lipides, 'g') }}</span></li>
+            <li><span>Glucides</span><span>{{ valeur(produit.glucides, 'g') }}</span></li>
+          </ul>
         </div>
       </div>
     </div>
@@ -64,43 +58,49 @@
 </template>
 
 <script setup>
+import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
-import { produits } from '../data/produits'
 import { useComparateurStore } from '../stores/comparateur'
+import { API_URL } from '../config'
 
 const route = useRoute()
-
-const produit = produits.find((p) => p.code === route.params.id) || produits[0]
-
+const produit = ref(null)
+const chargement = ref(true)
+const erreur = ref('')
 const comparateur = useComparateurStore()
 
-const couleursScoreLettre = {
-  A: '#038141',
-  B: '#85bb2f',
-  C: '#fecb02',
-  D: '#ee8100',
-  E: '#e63e11',
+function valeur(v, unite) {
+  return v === null || v === undefined ? 'Non disponible' : `${v} ${unite}`
 }
 
-const couleursNova = {
-  1: '#2ecc71',
-  2: '#f1c40f',
-  3: '#e67e22',
-  4: '#e74c3c',
+const textesStatut = {
+  NOT_ELIGIBLE: 'Non calculable',
+  FVL_NOT_AVAILABLE: 'Données incomplètes',
 }
 
-function couleurScore(lettre) {
-  return couleursScoreLettre[lettre] || '#67594f'
-}
-
-function couleurNova(groupe) {
-  return couleursNova[groupe] || '#67594f'
+function texteNutriScore(statut) {
+  if (!statut) return 'Non disponible'
+  return textesStatut[statut] || statut
 }
 
 function ajouterAuComparateur() {
   comparateur.ajouter({ id: route.params.id, ...produit.value })
 }
 
+onMounted(async () => {
+  try {
+    const reponse = await fetch(`${API_URL}/produits/${route.params.id}`)
+    if (!reponse.ok) {
+      erreur.value = 'Produit introuvable.'
+      return
+    }
+    produit.value = await reponse.json()
+  } catch {
+    erreur.value = 'Impossible de contacter le serveur. Vérifie que le backend est démarré.'
+  } finally {
+    chargement.value = false
+  }
+})
 </script>
 
 <style scoped>
@@ -159,25 +159,6 @@ function ajouterAuComparateur() {
   color: #67594f;
 }
 
-.miniatures {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
-  margin-top: 10px;
-}
-
-.miniature {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 90px;
-  border: 1px solid #edd9cc;
-  border-radius: 14px;
-  background: #fff0e2;
-  color: #67594f;
-  font-size: 13px;
-}
-
 .marque-format {
   margin: 0 0 4px;
   text-transform: uppercase;
@@ -226,8 +207,13 @@ function ajouterAuComparateur() {
   color: white;
 }
 
-.btn-principal:hover {
+.btn-principal:hover:not(:disabled) {
   background: #d96f16;
+}
+
+.btn-principal:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .btn-secondaire {
@@ -242,8 +228,9 @@ function ajouterAuComparateur() {
 
 .indicateurs {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: 1fr;
   gap: 12px;
+  margin-bottom: 28px;
 }
 
 .indicateur {
@@ -260,21 +247,48 @@ function ajouterAuComparateur() {
   color: #67594f;
 }
 
-.indicateur-badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  color: white;
+.indicateur-texte {
+  margin: 0;
   font-weight: bold;
-  font-size: 18px;
+  color: #532509;
 }
+
 .photo-produit {
   width: 100%;
   height: 100%;
   object-fit: contain;
   padding: 20px;
+}
+
+.nutrition {
+  margin-bottom: 28px;
+  padding: 20px;
+  border: 1px solid #edd9cc;
+  border-radius: 16px;
+  background: white;
+}
+
+.nutrition h2 {
+  margin: 0 0 14px;
+  font-size: 18px;
+  color: #532509;
+}
+
+.nutrition-liste {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.nutrition-liste li {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px solid #f3e6da;
+  color: #532509;
+}
+
+.nutrition-liste li:last-child {
+  border-bottom: 0;
 }
 </style>
