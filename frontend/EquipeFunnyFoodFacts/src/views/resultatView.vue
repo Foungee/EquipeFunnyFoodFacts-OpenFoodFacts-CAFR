@@ -1,72 +1,55 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 
-const recherche = ref('')
+const route = useRoute()
+const router = useRouter()
+
+const CHAMPS = [
+  'code',
+  'product_name',
+  'product_name_fr',
+  'brands',
+  'quantity',
+  'nutriscore_grade',
+  'nova_group',
+  'image_front_small_url',
+  'categories_tags',
+  'allergens_tags',
+  'nutriments',
+].join(',')
+
+const recherche = ref(String(route.query.query ?? ''))
 const nutriScore = ref('')
 const tri = ref('pertinence')
 const selection = ref([])
 
+const produits = ref([])
+const chargement = ref(false)
+const erreur = ref('')
+let numeroRequete = 0
+let dernierMot = ''
+
+const total = ref(0)
+const page = computed(() => Math.max(1, parseInt(route.query.page, 10) || 1))
+const nbPages = computed(() => Math.max(1, Math.ceil(total.value / NB_PRODUITS)))
+
 const allergenes = ref([
-  { nom: 'Gluten', active: false },
-  { nom: 'Lait', active: false },
-  { nom: 'Arachides', active: false },
-  { nom: 'Oeufs', active: false },
-  { nom: 'Soja', active: false },
+  { nom: 'Gluten', tag: 'en:gluten', active: false },
+  { nom: 'Lait', tag: 'en:milk', active: false },
+  { nom: 'Arachides', tag: 'en:peanuts', active: false },
+  { nom: 'Oeufs', tag: 'en:eggs', active: false },
+  { nom: 'Soja', tag: 'en:soybeans', active: false },
 ])
 
 const categories = ref([
-  { nom: 'Huiles et graisses', active: false },
-  { nom: 'Céréales', active: false },
-  { nom: 'Sauces', active: false },
-  { nom: 'Produits laitiers', active: false },
+  { nom: 'Huiles et graisses', mots: ['huile', 'oil', 'graisse', 'fat'], active: false },
+  { nom: 'Céréales', mots: ['cereal', 'céréale'], active: false },
+  { nom: 'Sauces', mots: ['sauce'], active: false },
+  { nom: 'Produits laitiers', mots: ['lait', 'dairie', 'laitier', 'yaourt', 'yogourt', 'yogurt', 'fromage'], active: false, },
 ])
 
-const produits = ref([
-  {
-    code: '6191509905058',
-    nom: 'Huile d’olive Terra Delyssa',
-    marque: 'Terra Delyssa',
-    details: '1 L · huile d’olive vierge extra',
-    categorie: 'Huiles et graisses',
-    allergenes: [],
-    nutriScore: 'C',
-    nova: 2,
-    image: '/produits/huile-terra-delyssa.jpg',
-  },
-  {
-    code: '0064100271913',
-    nom: 'Céréales All-Bran Buds',
-    marque: 'Kellogg’s',
-    details: '500 g · source de fibres',
-    categorie: 'Céréales',
-    allergenes: ['Gluten'],
-    nutriScore: 'A',
-    nova: 3,
-    image: '/produits/cereales-all-bran.jpg',
-  },
-  {
-    code: '0068400662600',
-    nom: 'Mayonnaise Hellmann’s',
-    marque: 'Hellmann’s',
-    details: '890 ml · à base d’œufs',
-    categorie: 'Sauces',
-    allergenes: ['Oeufs'],
-    nutriScore: 'D',
-    nova: 4,
-    image: '/produits/mayonnaise-hellmanns.jpg',
-  },
-  {
-    code: '0000000000017',
-    nom: 'Yogourt grec nature 2 %',
-    marque: 'Compliments',
-    details: '750 g · 4 g de sucre / 100 g · sans gluten',
-    categorie: 'Produits laitiers',
-    allergenes: ['Lait'],
-    nutriScore: 'A',
-    nova: 1,
-    image: '',
-  },
-])
+const requeteActuelle = computed(() => String(route.query.q ?? '').trim())
 
 const resultats = computed(() => {
   const texte = recherche.value.trim().toLowerCase()
