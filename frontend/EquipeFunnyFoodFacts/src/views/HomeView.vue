@@ -1,11 +1,11 @@
 <script setup>
 import { onMounted, ref } from 'vue'
-import { RouterLink } from 'vue-router'
+import { RouterLink, useRouter } from 'vue-router'
+
 import { API_URL } from '../config'
 
+const router = useRouter()
 const recherche = ref('')
-const messageRecherche = ref('')
-
 const produits = ref([])
 const chargement = ref(false)
 const erreurProduits = ref('')
@@ -106,9 +106,13 @@ async function chargerProduits() {
 }
 
 function soumettreRecherche() {
-  if (!recherche.value.trim()) return
+  const texte = recherche.value.trim()
+  if (!texte) return
 
-  messageRecherche.value = 'La page de résultats est en cours d’intégration.'
+  router.push({
+    path: '/resultat',
+    query: { q: texte },
+  })
 }
 
 onMounted(() => {
@@ -136,9 +140,6 @@ onMounted(() => {
               <button type="submit">Rechercher</button>
             </form>
 
-            <p v-if="messageRecherche" class="search-status" role="status">
-              {{ messageRecherche }}
-            </p>
           </div>
         </div>
       </div>

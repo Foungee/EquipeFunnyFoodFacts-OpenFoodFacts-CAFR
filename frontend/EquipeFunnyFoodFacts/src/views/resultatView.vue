@@ -1,25 +1,26 @@
 <script setup>
+import { API_URL } from '../config'
 import { ref, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 const route = useRoute()
 const router = useRouter()
 
-const CHAMPS = [
-  'code',
-  'product_name',
-  'product_name_fr',
-  'brands',
-  'quantity',
-  'nutriscore_grade',
-  'nova_group',
-  'image_front_small_url',
-  'categories_tags',
-  'allergens_tags',
-  'nutriments',
-].join(',')
+// const CHAMPS = [
+//   'code',
+//   'product_name',
+//   'product_name_fr',
+//   'brands',
+//   'quantity',
+//   'nutriscore_grade',
+//   'nova_group',
+//   'image_front_small_url',
+//   'categories_tags',
+//   'allergens_tags',
+//   'nutriments',
+// ].join(',')
 
-const recherche = ref(String(route.query.query ?? ''))
+const recherche = ref(String(route.query.q ?? ''))
 const nutriScore = ref('')
 const tri = ref('pertinence')
 const selection = ref([])
@@ -28,11 +29,11 @@ const produits = ref([])
 const chargement = ref(false)
 const erreur = ref('')
 let numeroRequete = 0
-let dernierMot = ''
+// let dernierMot = ''
 
-const total = ref(0)
-const page = computed(() => Math.max(1, parseInt(route.query.page, 10) || 1))
-const nbPages = computed(() => Math.max(1, Math.ceil(total.value / NB_PRODUITS)))
+// const total = ref(0)
+// const page = computed(() => Math.max(1, parseInt(route.query.page, 10) || 1))
+// const nbPages = computed(() => Math.max(1, Math.ceil(total.value / NB_PRODUITS)))
 
 const allergenes = ref([
   { nom: 'Gluten', tag: 'en:gluten', active: false },
@@ -63,7 +64,10 @@ const resultats = computed(() => {
       p.marque.toLowerCase().includes(texte) ||
       p.code.includes(texte)
     const okScore = !nutriScore.value || p.nutriScore === nutriScore.value
-    const okAllergenes = !p.allergenes.some((a) => allergenesExclus.includes(a))
+    const okAllergenes =
+      !allergenesExclus.length ||
+      (Array.isArray(p.allergenes) &&
+        !p.allergenes.some((a) => allergenesExclus.includes(a)))
     const okCategories =
       !categoriesActives.length || categoriesActives.includes(p.categorie)
     return okTexte && okScore && okAllergenes && okCategories
@@ -90,6 +94,80 @@ function resetFilters() {
   allergenes.value.forEach((a) => (a.active = false))
   categories.value.forEach((c) => (c.active = false))
 }
+
+function soumettreRecherche() {
+  const texte = recherche.value.trim()
+
+  router.push({
+    path: '/resultat',
+    query: texte ? { q: texte } : {},
+  })
+}
+
+async function chargerProduits(texte) {
+  const requete = ++numeroRequete
+  chargement.value = true
+  erreur.value = ''
+  produits.value = []
+
+  try {
+    const parametres = new URLSearchParams({
+      recherche: texte,
+      limit: '15',
+    })
+
+    const reponse = await fetch(
+      `${API_URL.replace(/\/$/, '')}/produits?${parametres}`,
+      { signal: AbortSignal.timeout(20000) },
+    )
+
+    if (!reponse.ok) {
+      throw new Error(`Erreur HTTP ${reponse.status}`)
+    }
+
+    const donnees = await reponse.json()
+
+    if (!Array.isArray(donnees)) {
+      throw new Error('Réponse du serveur invalide.')
+    }
+
+    if (requete !== numeroRequete) return
+
+    produits.value = donnees
+      .filter((produit) => produit && produit.id != null)
+      .map((produit) => ({
+        code: String(produit.id),
+        nom: produit.nom || 'Nom non renseigné',
+        marque: produit.marque || '',
+        image: produit.image || '',
+        details: produit.categorie || '',
+        categorie: produit.categorie || '',
+        nutriScore: String(produit.nutriScore || '').toUpperCase(),
+        allergenes: null,
+        nova: null,
+      }))
+  } catch (cause) {
+    if (requete !== numeroRequete) return
+
+    console.error('Recherche des produits :', cause)
+    erreur.value = 'Impossible de charger les produits. Réessayez.'
+  } finally {
+    if (requete === numeroRequete) {
+      chargement.value = false
+    }
+  }
+}
+
+watch(
+  requeteActuelle,
+  (texte) => {
+    recherche.value = texte
+    selection.value = []
+    chargerProduits(texte)
+  },
+  { immediate: true },
+)
+
 </script>
 
 <template>
@@ -97,16 +175,11 @@ function resetFilters() {
     <section class="hero">
       <div class="container">
         <h1>Résultats de recherche</h1>
-        <form class="search" @submit.prevent>
+        <form class="search" @submit.prevent="soumettreRecherche">
           <label for="produit" class="visually-hidden">
             Nom ou code-barres du produit
           </label>
-          <input
-            id="produit"
-            v-model="recherche"
-            type="search"
-            placeholder="Nom du produit ou code-barres…"
-          />
+          <input id="produit" v-model="recherche" type="search" placeholder="Nom du produit ou code-barres…" />
           <button type="submit">Rechercher</button>
         </form>
       </div>
@@ -123,14 +196,9 @@ function resetFilters() {
 
             <h3>Nutri-Score</h3>
             <div class="nutri-buttons" role="group" aria-label="Nutri-Score">
-              <button
-                v-for="score in ['A', 'B', 'C', 'D', 'E']"
-                :key="score"
-                type="button"
-                :class="['nutri', { selected: nutriScore === score }]"
-                :aria-pressed="nutriScore === score"
-                @click="selectNutriScore(score)"
-              >
+              <button v-for="score in ['A', 'B', 'C', 'D', 'E']" :key="score" type="button"
+                :class="['nutri', { selected: nutriScore === score }]" :aria-pressed="nutriScore === score"
+                @click="selectNutriScore(score)">
                 {{ score }}
               </button>
             </div>
@@ -139,14 +207,9 @@ function resetFilters() {
           <div class="filtres">
             <h3>Exclure les allergènes</h3>
             <div class="chips">
-              <button
-                v-for="allergene in allergenes"
-                :key="allergene.nom"
-                type="button"
-                :class="{ active: allergene.active }"
-                :aria-pressed="allergene.active"
-                @click="allergene.active = !allergene.active"
-              >
+              <button v-for="allergene in allergenes" :key="allergene.nom" type="button"
+                :class="{ active: allergene.active }" :aria-pressed="allergene.active"
+                @click="allergene.active = !allergene.active">
                 {{ allergene.nom }}
                 <span v-if="allergene.active" aria-hidden="true">×</span>
               </button>
@@ -156,14 +219,9 @@ function resetFilters() {
           <div class="filtres">
             <h3>Catégories</h3>
             <div class="chips">
-              <button
-                v-for="categorie in categories"
-                :key="categorie.nom"
-                type="button"
-                :class="{ active: categorie.active }"
-                :aria-pressed="categorie.active"
-                @click="categorie.active = !categorie.active"
-              >
+              <button v-for="categorie in categories" :key="categorie.nom" type="button"
+                :class="{ active: categorie.active }" :aria-pressed="categorie.active"
+                @click="categorie.active = !categorie.active">
                 {{ categorie.nom }}
                 <span v-if="categorie.active" aria-hidden="true">×</span>
               </button>
@@ -187,15 +245,22 @@ function resetFilters() {
             </label>
           </div>
 
-          <ul v-if="resultats.length" class="liste">
+          <p v-if="chargement" role="status">
+            Chargement des produits…
+          </p>
+
+          <div v-if="erreur" role="alert">
+            <p>{{ erreur }}</p>
+            <button type="button" @click="chargerProduits(requeteActuelle)">
+              Réessayer
+            </button>
+          </div>
+          
+
+         <ul v-if="!chargement && !erreur && resultats.length" class="liste">
             <li v-for="produit in resultats" :key="produit.code" class="ligne">
-              <input
-                v-model="selection"
-                type="checkbox"
-                class="case"
-                :value="produit.code"
-                :aria-label="`Sélectionner ${produit.nom} pour la comparaison`"
-              />
+              <input v-model="selection" type="checkbox" class="case" :value="produit.code"
+                :aria-label="`Sélectionner ${produit.nom} pour la comparaison`" />
 
               <div class="vignette">
                 <img v-if="produit.image" :src="produit.image" :alt="produit.nom" />
@@ -209,10 +274,7 @@ function resetFilters() {
               </div>
 
               <div class="indicateurs">
-                <span
-                  :class="['score', 'nutri-' + produit.nutriScore]"
-                  :title="`Nutri-Score ${produit.nutriScore}`"
-                >
+                <span :class="['score', 'nutri-' + produit.nutriScore]" :title="`Nutri-Score ${produit.nutriScore}`">
                   {{ produit.nutriScore }}
                 </span>
                 <span class="nova" :title="`Groupe NOVA ${produit.nova}`">
@@ -223,7 +285,7 @@ function resetFilters() {
             </li>
           </ul>
 
-          <p v-else class="vide">
+          <p v-else-if="!chargement && !erreur" class="vide">
             Aucun produit ne correspond à votre recherche. Essayez un autre nom
             ou retirez un filtre.
           </p>
@@ -236,11 +298,8 @@ function resetFilters() {
         {{ selection.length }}
         {{ selection.length > 1 ? 'produits sélectionnés' : 'produit sélectionné' }}
       </span>
-      <a
-        :href="lienComparer"
-        :class="['comparer', { desactive: selection.length < 2 }]"
-        :aria-disabled="selection.length < 2"
-      >
+      <a :href="lienComparer" :class="['comparer', { desactive: selection.length < 2 }]"
+        :aria-disabled="selection.length < 2">
         Comparer côte à côte →
       </a>
     </div>
@@ -520,11 +579,25 @@ h1 {
   color: white;
 }
 
-.score.nutri-A { background: #038141; }
-.score.nutri-B { background: #4b9f2a; }
-.score.nutri-C { background: #c98a00; }
-.score.nutri-D { background: #e6620f; }
-.score.nutri-E { background: #d52b1e; }
+.score.nutri-A {
+  background: #038141;
+}
+
+.score.nutri-B {
+  background: #4b9f2a;
+}
+
+.score.nutri-C {
+  background: #c98a00;
+}
+
+.score.nutri-D {
+  background: #e6620f;
+}
+
+.score.nutri-E {
+  background: #d52b1e;
+}
 
 .nova {
   border: 1px solid #dabca9;
