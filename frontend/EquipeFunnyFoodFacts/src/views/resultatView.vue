@@ -93,6 +93,8 @@ function resetFilters() {
   tri.value = 'pertinence'
   allergenes.value.forEach((a) => (a.active = false))
   categories.value.forEach((c) => (c.active = false))
+
+  soumettreRecherche()
 }
 
 function soumettreRecherche() {
