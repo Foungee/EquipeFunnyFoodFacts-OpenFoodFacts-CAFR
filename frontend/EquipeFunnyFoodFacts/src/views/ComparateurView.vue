@@ -9,18 +9,16 @@
     <h1>Comparateur de produits</h1>
 
     <p v-if="comparateur.produits.length === 0" class="message-vide">
-      Ton comparateur est vide. Va sur une fiche produit et clique sur
-      "Ajouter au comparateur" pour commencer.
+      Ton comparateur est vide. Va sur une fiche produit et clique sur "Ajouter au comparateur" pour
+      commencer.
     </p>
 
     <div v-else class="comparateur-grille">
-      <div
-        v-for="produit in comparateur.produits"
-        :key="produit.id"
-        class="carte-produit"
-      >
-        <img :src="produit.image" :alt="produit.nom" class="carte-image" />
-        <h2>{{ produit.nom }}</h2>
+      <div v-for="produit in comparateur.produits" :key="produit.id" class="carte-produit">
+        <a :href="`/produit/${produit.id}`" class="lien-produit">
+          <img :src="produit.image" :alt="produit.nom" class="carte-image" />
+          <h2>{{ produit.nom }}</h2>
+        </a>
         <p class="marque">{{ produit.marque }}</p>
 
         <table class="tableau-comparatif">
@@ -57,9 +55,9 @@
         </button>
       </div>
 
-      <div v-if="comparateur.produits.length < 2" class="carte-produit carte-vide">
-        <p>Ajoute un deuxième produit depuis sa fiche pour le comparer ici.</p>
-      </div>
+      <a v-if="comparateur.produits.length < 2" href="/" class="carte-produit carte-vide">
+        <p>Clique ici pour choisir un deuxième produit sur la page d'accueil.</p>
+      </a>
     </div>
 
     <button
@@ -234,5 +232,30 @@ h1 {
 .bouton-vider {
   display: block;
   margin: 0 auto;
+}
+
+.lien-produit {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+}
+
+.lien-produit:hover h2 {
+  text-decoration: underline;
+}
+.carte-vide {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: #67594f;
+  background: #fff0e2;
+  border-style: dashed;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.carte-vide:hover {
+  background: #ffe6ce;
 }
 </style>

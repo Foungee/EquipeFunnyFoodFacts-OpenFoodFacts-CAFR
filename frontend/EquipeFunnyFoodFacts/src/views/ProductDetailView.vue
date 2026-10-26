@@ -33,7 +33,7 @@
             {{ comparateur.estDansComparateur(route.params.id) ? 'Déjà dans le comparateur' : 'Ajouter au comparateur' }}
           </button>
           <button type="button" class="btn-secondaire">Enregistrer</button>
-          <button type="button" class="btn-secondaire">Corriger la fiche</button>
+         
         </div>
 
         <div class="indicateurs">
@@ -59,11 +59,12 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useComparateurStore } from '../stores/comparateur'
 import { API_URL } from '../config'
 
 const route = useRoute()
+const router = useRouter()
 const produit = ref(null)
 const chargement = ref(true)
 const erreur = ref('')
@@ -85,6 +86,7 @@ function texteNutriScore(statut) {
 
 function ajouterAuComparateur() {
   comparateur.ajouter({ id: route.params.id, ...produit.value })
+  router.push('/comparateur')
 }
 
 onMounted(async () => {
