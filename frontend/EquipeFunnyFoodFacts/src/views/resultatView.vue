@@ -134,7 +134,7 @@ function ecrireCache(cle, valeur) {
   try {
     sessionStorage.setItem(cle, JSON.stringify({ date: Date.now(), valeur }))
   } catch {
-
+    return null
   }
 }
 
