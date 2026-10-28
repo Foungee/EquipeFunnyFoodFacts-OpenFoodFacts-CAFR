@@ -20,10 +20,15 @@ const router = createRouter({
     },
 
     {
-  path: '/resultat',
-  name: 'resultats',
-  component: () => import('../views/resultatView.vue'),
-},
+      path: '/resultat',
+      name: 'resultats',
+      component: () => import('../views/resultatView.vue'),
+    },
+    {
+      path: '/comparateur',
+      name: 'comparateur',
+      component: () => import('../views/ComparateurView.vue'),
+    },
 
   ],
 })
