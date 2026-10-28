@@ -1,7 +1,7 @@
 <template>
   <div class="comparateur-page">
     <nav class="fil-ariane" aria-label="Fil d'Ariane">
-      <a href="/">Accueil</a>
+      <RouterLink to="/">Accueil</RouterLink>
       <span class="separateur">›</span>
       <span class="fil-ariane-actuel">Comparateur</span>
     </nav>
@@ -15,17 +15,20 @@
 
     <div v-else class="comparateur-grille">
       <div v-for="produit in comparateur.produits" :key="produit.id" class="carte-produit">
-        <a :href="`/produit/${produit.id}`" class="lien-produit">
+        <RouterLink :to="`/produit/${produit.id}`" class="lien-produit">
           <img :src="produit.image" :alt="produit.nom" class="carte-image" />
           <h2>{{ produit.nom }}</h2>
-        </a>
+        </RouterLink>
         <p class="marque">{{ produit.marque }}</p>
 
         <table class="tableau-comparatif">
           <tbody>
             <tr>
               <th>Prix</th>
-              <td>{{ produit.prix ? `${produit.prix.toFixed(2)} $` : 'Non disponible' }}</td>
+              <td :class="{ 'valeur-gagnante': estMeilleur('prix', produit) }">
+                {{ produit.prix ? `${produit.prix.toFixed(2)} $` : 'Non disponible' }}
+                <i v-if="estMeilleur('prix', produit)" class="bi bi-check-circle-fill"></i>
+              </td>
             </tr>
             <tr>
               <th>Nutri-Score</th>
@@ -33,19 +36,31 @@
             </tr>
             <tr>
               <th>Calories</th>
-              <td>{{ valeur(produit.calories, 'kcal') }}</td>
+              <td :class="{ 'valeur-gagnante': estMeilleur('calories', produit) }">
+                {{ valeur(produit.calories, 'kcal') }}
+                <i v-if="estMeilleur('calories', produit)" class="bi bi-check-circle-fill"></i>
+              </td>
             </tr>
             <tr>
               <th>Protéines</th>
-              <td>{{ valeur(produit.proteines, 'g') }}</td>
+              <td :class="{ 'valeur-gagnante': estMeilleur('proteines', produit) }">
+                {{ valeur(produit.proteines, 'g') }}
+                <i v-if="estMeilleur('proteines', produit)" class="bi bi-check-circle-fill"></i>
+              </td>
             </tr>
             <tr>
               <th>Lipides</th>
-              <td>{{ valeur(produit.lipides, 'g') }}</td>
+              <td :class="{ 'valeur-gagnante': estMeilleur('lipides', produit) }">
+                {{ valeur(produit.lipides, 'g') }}
+                <i v-if="estMeilleur('lipides', produit)" class="bi bi-check-circle-fill"></i>
+              </td>
             </tr>
             <tr>
               <th>Glucides</th>
-              <td>{{ valeur(produit.glucides, 'g') }}</td>
+              <td :class="{ 'valeur-gagnante': estMeilleur('glucides', produit) }">
+                {{ valeur(produit.glucides, 'g') }}
+                <i v-if="estMeilleur('glucides', produit)" class="bi bi-check-circle-fill"></i>
+              </td>
             </tr>
           </tbody>
         </table>
@@ -55,9 +70,9 @@
         </button>
       </div>
 
-      <a v-if="comparateur.produits.length < 2" href="/" class="carte-produit carte-vide">
+      <RouterLink v-if="comparateur.produits.length < 2" to="/" class="carte-produit carte-vide">
         <p>Clique ici pour choisir un deuxième produit sur la page d'accueil.</p>
-      </a>
+      </RouterLink>
     </div>
 
     <button
@@ -72,6 +87,7 @@
 </template>
 
 <script setup>
+import { RouterLink } from 'vue-router'
 import { useComparateurStore } from '../stores/comparateur'
 
 const comparateur = useComparateurStore()
@@ -88,6 +104,32 @@ const textesStatut = {
 function texteNutriScore(statut) {
   if (!statut) return 'Non disponible'
   return textesStatut[statut] || statut
+}
+
+
+const directionMeilleur = {
+  prix: 'bas',
+  calories: 'bas',
+  proteines: 'haut',
+  lipides: 'bas',
+  glucides: 'bas',
+}
+
+function estMeilleur(cle, produit) {
+  if (comparateur.produits.length < 2) return false
+
+  const autre = comparateur.produits.find((p) => p.id !== produit.id)
+  if (!autre) return false
+
+  const valeurA = produit[cle]
+  const valeurB = autre[cle]
+
+  if (valeurA === null || valeurA === undefined || valeurB === null || valeurB === undefined) {
+    return false
+  }
+  if (valeurA === valeurB) return false
+
+  return directionMeilleur[cle] === 'bas' ? valeurA < valeurB : valeurA > valeurB
 }
 </script>
 
@@ -212,6 +254,14 @@ h1 {
   color: #532509;
   font-weight: bold;
   text-align: right;
+}
+
+.valeur-gagnante {
+  color: #2e7d32;
+}
+
+.valeur-gagnante i {
+  margin-left: 6px;
 }
 
 .btn-secondaire {
