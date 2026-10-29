@@ -12,7 +12,7 @@ import { RouterLink, RouterView } from 'vue-router'
       <nav aria-label="Navigation principale">
         <RouterLink to="/">Accueil</RouterLink>
 
-        <RouterLink to="/resultat">Produits</RouterLink>
+        <RouterLink to="/produits">Produits</RouterLink>
 
         <a href="https://ca.openfoodfacts.org/contribute" target="_blank" rel="noopener noreferrer">
           Contribuer
