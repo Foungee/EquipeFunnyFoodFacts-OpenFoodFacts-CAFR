@@ -8,12 +8,19 @@ const router = useRouter()
 
 const NOM_SITE = 'Open Food Facts QC'
 
-const LIMITE_INITIALE = 15
-const PAS = 15
-const LIMITE_MAX = 90
+// Nombre de produits demandés au serveur en UNE seule fois.
+const LIMITES_SERVEUR = [500, 100, 50]
+
+  // Affichage à l'écran : 30 produits au départ, puis 20 de plus à chaque clic
+const AFFICHAGE_INITIAL = 50
+const PAS_AFFICHAGE = 50
+
 const DELAI_MAX = 20000
 const PAUSES_REESSAI = [2000]
-const MAX_COMPARAISON = 4
+
+const MAX_COMPARAISON = 2
+
+const NB_MARQUES = 8
 
 const LIBELLES_NUTRI = {
   A: 'très bonne',
@@ -22,7 +29,6 @@ const LIBELLES_NUTRI = {
   D: 'médiocre',
   E: 'mauvaise',
 }
-
 const LIBELLES_NOVA = {
   1: 'aliment non transformé ou peu transformé',
   2: 'ingrédient culinaire',
@@ -42,46 +48,71 @@ function titreNova(nova) {
   return libelle ? `Groupe NOVA ${nova} : ${libelle}` : `Groupe NOVA ${nova}`
 }
 
-
+/* ------------------------------------------------------------------
+   ÉTAT DE LA PAGE
+------------------------------------------------------------------ */
 const recherche = ref(String(route.query.q ?? ''))
-const nutriScore = ref('')
 const tri = ref('pertinence')
 const selection = ref([])
 const filtresOuverts = ref(false)
 
 const produits = ref([])
-const nbRecus = ref(0)
-const limite = ref(LIMITE_INITIALE)
+const plafond = ref(0)
+const nbAffiches = ref(AFFICHAGE_INITIAL)
 const chargement = ref(false)
-const chargementPlus = ref(false)
 const erreur = ref('')
-const erreurPlus = ref('')
 let numeroRequete = 0
+let indexLimite = 0
+const nutriScore = ref('')
+const novaChoisi = ref(0)
+const marquesChoisies = ref([])
 
 const allergenes = ref([
-  { nom: 'Gluten', mots: ['gluten'], active: false },
+  { nom: 'Gluten (blé)', mots: ['gluten', 'ble', 'wheat'], active: false },
   { nom: 'Lait', mots: ['lait', 'milk'], active: false },
-  { nom: 'Arachides', mots: ['arachide', 'peanut'], active: false },
   { nom: 'Oeufs', mots: ['oeuf', 'egg'], active: false },
+  { nom: 'Arachides', mots: ['arachide', 'peanut', 'cacahuete'], active: false },
+  { nom: 'Noix', mots: ['noix', 'en:nuts', 'tree-nut', 'tree nut', 'amande', 'noisette', 'almond', 'hazelnut', 'cashew', 'pecan', 'pistach'], active: false, },
   { nom: 'Soja', mots: ['soja', 'soy'], active: false },
+  { nom: 'Poisson', mots: ['poisson', 'en:fish'], active: false },
+  { nom: 'Crustacés et mollusques', mots: ['crustace', 'mollusque', 'mollusc', 'shellfish', 'crustacean'],
+    active: false,
+  },
+  { nom: 'Sésame', mots: ['sesame'], active: false },
+  { nom: 'Moutarde', mots: ['moutarde', 'mustard'], active: false },
+  { nom: 'Sulfites', mots: ['sulfite', 'sulphite'], active: false },
 ])
 
 const categories = ref([
-  { nom: 'Huiles et graisses', mots: ['huile', 'oil', 'graisse', 'fat'], active: false },
-  { nom: 'Céréales', mots: ['cereal'], active: false },
-  { nom: 'Sauces', mots: ['sauce'], active: false },
-  {
-    nom: 'Produits laitiers',
-    mots: ['lait', 'dairie', 'laitier', 'yaourt', 'yogourt', 'yogurt', 'fromage'],
-    active: false,
-  },
+  { code: 'ALCOHOLIC_BEVERAGES', nom: 'Boissons alcoolisées', active: false },
+  { code: 'BABY_CARE', nom: 'Soins pour bébé', active: false },
+  { code: 'BAKERY', nom: 'Boulangerie', active: false },
+  { code: 'BAKING_INGREDIENTS', nom: 'Ingrédients de cuisson', active: false },
+  { code: 'BEVERAGES', nom: 'Boissons', active: false },
+  { code: 'BREAKFAST', nom: 'Petit-déjeuner', active: false },
+  { code: 'CANNED_GOODS', nom: 'Conserves', active: false },
+  { code: 'CONDIMENTS_SAUCES', nom: 'Condiments et sauces', active: false },
+  { code: 'CONFECTIONERY', nom: 'Confiseries', active: false },
+  { code: 'DAIRY', nom: 'Produits laitiers', active: false },
+  { code: 'FROZEN', nom: 'Surgelés', active: false },
+  { code: 'GENERAL_GROCERY', nom: 'Épicerie générale', active: false },
+  { code: 'MEAT_SEAFOOD', nom: 'Viandes et fruits de mer', active: false },
+  { code: 'OILS_VINEGARS', nom: 'Huiles et vinaigres', active: false },
+  { code: 'PASTA_RICE', nom: 'Pâtes et riz', active: false },
+  { code: 'PET_FOOD', nom: 'Nourriture pour animaux', active: false },
+  { code: 'PRODUCE', nom: 'Fruits et légumes', active: false },
+  { code: 'SNACKS', nom: 'Collations', active: false },
 ])
 
-
+// Le mot recherché, tel qu'il est dans l'adresse (?q=...)
 const requeteActuelle = computed(() => String(route.query.q ?? '').trim())
 
+/* ------------------------------------------------------------------
+   RÉCUPÉRER LES PRODUITS DANS LA BASE DE DONNÉES
+------------------------------------------------------------------ */
 function normaliser(texte) {
   return String(texte)
+    .trim()
     .toLowerCase()
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
@@ -92,31 +123,42 @@ function versListe(valeur) {
   if (typeof valeur === 'string') {
     return valeur
       .split(/[,;|]/)
-      .map((v) => normaliser(v.trim()))
+      .map((v) => normaliser(v))
       .filter(Boolean)
   }
   return []
 }
 
+function nomCategorie(code) {
+  const trouvee = categories.value.find((c) => normaliser(c.code) === normaliser(code))
+  return trouvee ? trouvee.nom : ''
+}
 
+// Transforme un produit reçu du serveur en un produit simple pour notre page.
+// Champs du serveur utilisés : id, nom, marque, image, categorie, nutriScore, nova, allergenes
 function convertir(p) {
-  const grade = String(p.nutriScore ?? p.nutriscore ?? '').toUpperCase()
-  const nova = Number(p.nova)
-  const categorie = typeof p.categorie === 'string' ? p.categorie : ''
+  const code = [p.categorie, p.taxonomy].find((v) => typeof v === 'string') ?? ''
+  const grade = String(p.nutriScore ?? p.nutriscore ?? p.nutriscore_grade ?? '')
+    .trim()
+    .toUpperCase()
+  const nova = Number(p.nova ?? p.novaGroup ?? p.nova_group)
+  const marque = typeof p.marque === 'string' ? p.marque.trim() : ''
   return {
     code: String(p.id),
     nom: typeof p.nom === 'string' && p.nom.trim() ? p.nom : 'Nom non renseigné',
-    marque: typeof p.marque === 'string' ? p.marque : '',
+    marque,
+    marqueCle: normaliser(marque),
     image: typeof p.image === 'string' ? p.image : '',
-    details: typeof p.details === 'string' ? p.details : categorie,
-    categories: versListe(p.categories ?? categorie),
-    allergenes: versListe(p.allergenes),
+    details: typeof p.details === 'string' ? p.details : '',
+    categorieCode: normaliser(code),
+    categorieNom: nomCategorie(code),
+    allergenes: versListe(p.allergenes ?? p.allergens),
     nutriScore: grade.length === 1 && 'ABCDE'.includes(grade) ? grade : '',
-    nova: nova > 0 ? nova : null,
+    nova: Number.isInteger(nova) && nova > 0 ? nova : null,
   }
 }
 
-
+// Mémoire des recherches. On garde chaque résultat 10 minutes dans le navigateur (sessionStorage).
 const DUREE_CACHE = 10 * 60 * 1000
 
 function lireCache(cle) {
@@ -138,7 +180,8 @@ function ecrireCache(cle, valeur) {
   }
 }
 
-async function chargerDepuisApi(texte, nombre) {
+// Demande les produits au serveur : GET /produits?recherche=yogourt&limit=500
+async function appelerServeur(texte, nombre) {
   const parametres = new URLSearchParams({ limit: String(nombre) })
   if (texte) parametres.set('recherche', texte)
 
@@ -146,12 +189,16 @@ async function chargerDepuisApi(texte, nombre) {
     `${API_URL.replace(/\/$/, '')}/produits?${parametres}`,
     { signal: AbortSignal.timeout(DELAI_MAX) },
   )
-  if (!reponse.ok) throw new Error(`Erreur HTTP ${reponse.status}`)
+  if (!reponse.ok) {
+    const e = new Error(`Erreur HTTP ${reponse.status}`)
+    e.status = reponse.status
+    throw e
+  }
 
   const donnees = await reponse.json()
   if (!Array.isArray(donnees)) throw new Error('Réponse du serveur invalide.')
 
-  const dejaVus = new Set()
+  const dejaVus = new Set() // évite les doublons
   const liste = donnees
     .filter((p) => p && p.id != null)
     .map(convertir)
@@ -160,13 +207,30 @@ async function chargerDepuisApi(texte, nombre) {
       dejaVus.add(p.code)
       return true
     })
-  return { liste, nbRecus: donnees.length }
+
+  return { liste, plafond: donnees.length >= nombre ? nombre : 0 }
 }
 
-async function chargerAvecReessais(texte, nombre, id) {
+// Essaie la limite la plus haute ; si le serveur la refuse (erreur 400, 413 ou 422),
+// on passe à la limite suivante, et on s'en souvient pour les recherches suivantes.
+async function chargerDepuisApi(texte) {
+  for (;;) {
+    try {
+      return await appelerServeur(texte, LIMITES_SERVEUR[indexLimite])
+    } catch (e) {
+      const limiteRefusee = [400, 413, 422].includes(e.status)
+      if (!limiteRefusee || indexLimite >= LIMITES_SERVEUR.length - 1) throw e
+      console.warn(`Limite ${LIMITES_SERVEUR[indexLimite]} refusée par le serveur, essai avec moins.`)
+      indexLimite += 1
+    }
+  }
+}
+
+// Appelle le serveur, et réessaie une fois s'il échoue.
+async function chargerAvecReessais(texte, id) {
   for (let essai = 0; ; essai++) {
     try {
-      return await chargerDepuisApi(texte, nombre)
+      return await chargerDepuisApi(texte)
     } catch (e) {
       console.warn(`Essai ${essai + 1} échoué :`, e)
       if (essai >= PAUSES_REESSAI.length) throw e
@@ -186,63 +250,37 @@ function messageErreur(e) {
   return 'Impossible de charger les produits pour le moment. Réessayez.'
 }
 
-
-async function charger(plus = false) {
+async function charger() {
   const texte = requeteActuelle.value
   const id = ++numeroRequete
   erreur.value = ''
-  erreurPlus.value = ''
+  produits.value = []
+  plafond.value = 0
+  nbAffiches.value = AFFICHAGE_INITIAL
 
-  if (!plus) {
-    limite.value = LIMITE_INITIALE
-    produits.value = []
-    nbRecus.value = 0
-  }
-
-  const cle = `bd:${texte.toLowerCase()}:${limite.value}`
+  const cle = `bd4:${texte.toLowerCase()}`
   const enMemoire = lireCache(cle)
   if (enMemoire) {
     produits.value = enMemoire.liste
-    nbRecus.value = enMemoire.nbRecus
+    plafond.value = enMemoire.plafond
     chargement.value = false
-    chargementPlus.value = false
     return
   }
 
-  if (plus) chargementPlus.value = true
-  else chargement.value = true
-
+  chargement.value = true
   try {
-    const reponse = await chargerAvecReessais(texte, limite.value, id)
+    const reponse = await chargerAvecReessais(texte, id)
     if (id !== numeroRequete) return
     produits.value = reponse.liste
-    nbRecus.value = reponse.nbRecus
+    plafond.value = reponse.plafond
     if (reponse.liste.length) ecrireCache(cle, reponse)
   } catch (e) {
     if (id !== numeroRequete) return
     console.error('Recherche des produits :', e)
-    if (plus) {
-      limite.value = Math.max(LIMITE_INITIALE, limite.value - PAS)
-      erreurPlus.value = messageErreur(e)
-    } else {
-      erreur.value = messageErreur(e)
-    }
+    erreur.value = messageErreur(e)
   } finally {
-    if (id === numeroRequete) {
-      chargement.value = false
-      chargementPlus.value = false
-    }
+    if (id === numeroRequete) chargement.value = false
   }
-}
-
-const aPlus = computed(() => nbRecus.value >= limite.value && limite.value < LIMITE_MAX)
-const limiteMaxAtteinte = computed(
-  () => nbRecus.value >= limite.value && limite.value >= LIMITE_MAX,
-)
-
-function voirPlus() {
-  limite.value = Math.min(limite.value + PAS, LIMITE_MAX)
-  charger(true)
 }
 
 function soumettreRecherche() {
@@ -259,11 +297,13 @@ onBeforeUnmount(() => {
   document.title = titreInitial
 })
 
+// Dès que ?q=... change, on relance la recherche
 watch(
   requeteActuelle,
   (texte) => {
     recherche.value = texte
     selection.value = []
+    marquesChoisies.value = []
     document.title = texte
       ? `${texte} – Résultats | ${NOM_SITE}`
       : `Résultats | ${NOM_SITE}`
@@ -272,16 +312,57 @@ watch(
   { immediate: true },
 )
 
+// Compte les produits chargés selon une valeur : { 'a': 3, 'b': 1 }
+function compter(lire) {
+  const compte = {}
+  for (const p of produits.value) {
+    const valeur = lire(p)
+    if (valeur) compte[valeur] = (compte[valeur] ?? 0) + 1
+  }
+  return compte
+}
+
+const compteNutri = computed(() => compter((p) => p.nutriScore))
+const compteNova = computed(() => compter((p) => p.nova))
+const compteCategories = computed(() => compter((p) => p.categorieCode))
+
+function nbCategorie(categorie) {
+  return compteCategories.value[normaliser(categorie.code)] ?? 0
+}
+
+// Le serveur a-t-il envoyé ces informations pour au moins un produit ?
+const nutriDisponible = computed(() => Object.keys(compteNutri.value).length > 0)
+const novaDisponible = computed(() => Object.keys(compteNova.value).length > 0)
+const allergenesDisponibles = computed(() => produits.value.some((p) => p.allergenes.length))
+
+const marques = computed(() => {
+  const groupes = new Map()
+  for (const p of produits.value) {
+    if (!p.marqueCle) continue
+    const groupe = groupes.get(p.marqueCle) ?? { cle: p.marqueCle, nom: p.marque, n: 0 }
+    groupe.n += 1
+    groupes.set(p.marqueCle, groupe)
+  }
+  const triees = [...groupes.values()].sort(
+    (a, b) => b.n - a.n || a.nom.localeCompare(b.nom, 'fr'),
+  )
+  const visibles = triees.slice(0, NB_MARQUES)
+  for (const cle of marquesChoisies.value) {
+    const groupe = groupes.get(cle)
+    if (groupe && !visibles.includes(groupe)) visibles.push(groupe)
+  }
+  return { liste: visibles, total: groupes.size }
+})
 
 const nbFiltres = computed(
   () =>
     (nutriScore.value ? 1 : 0) +
+    (novaChoisi.value ? 1 : 0) +
     allergenes.value.filter((a) => a.active).length +
-    categories.value.filter((c) => c.active).length,
+    categories.value.filter((c) => c.active).length +
+    marquesChoisies.value.length,
 )
 const filtresActifs = computed(() => nbFiltres.value > 0)
-
-const allergenesDisponibles = computed(() => produits.value.some((p) => p.allergenes.length))
 
 function contientUnMot(textes, mots) {
   return mots.some((mot) => textes.some((t) => t.includes(mot)))
@@ -289,15 +370,15 @@ function contientUnMot(textes, mots) {
 
 const resultats = computed(() => {
   const allergenesExclus = allergenes.value.filter((a) => a.active)
-  const categoriesActives = categories.value.filter((c) => c.active)
+  const codesActifs = categories.value.filter((c) => c.active).map((c) => normaliser(c.code))
 
   let liste = produits.value.filter((p) => {
-    const okScore = !nutriScore.value || p.nutriScore === nutriScore.value
+    const okNutri = !nutriScore.value || p.nutriScore === nutriScore.value
+    const okNova = !novaChoisi.value || p.nova === novaChoisi.value
     const okAllergenes = !allergenesExclus.some((a) => contientUnMot(p.allergenes, a.mots))
-    const okCategories =
-      !categoriesActives.length ||
-      categoriesActives.some((c) => contientUnMot(p.categories, c.mots))
-    return okScore && okAllergenes && okCategories
+    const okCategories = !codesActifs.length || codesActifs.includes(p.categorieCode)
+    const okMarques = !marquesChoisies.value.length || marquesChoisies.value.includes(p.marqueCle)
+    return okNutri && okNova && okAllergenes && okCategories && okMarques
   })
 
   if (tri.value === 'nom') {
@@ -311,36 +392,80 @@ const resultats = computed(() => {
   return liste
 })
 
+const total = computed(() => produits.value.length)
+
+// On montre 30 produits, puis 20 de plus à chaque clic (instantané : tout est déjà chargé)
+const visibles = computed(() => resultats.value.slice(0, nbAffiches.value))
+const restants = computed(() => Math.max(0, resultats.value.length - nbAffiches.value))
+const prochainPaquet = computed(() => Math.min(PAS_AFFICHAGE, restants.value))
+
+function afficherPlus() {
+  nbAffiches.value += PAS_AFFICHAGE
+}
+
+
+const signatureFiltres = computed(() =>
+  [  nutriScore.value, novaChoisi.value, tri.value, marquesChoisies.value.join('|'), categories.value.filter((c) => c.active).map((c) => c.code).join('|'),
+    allergenes.value.filter((a) => a.active).map((a) => a.nom).join('|'),
+  ].join('#'),
+)
+watch(signatureFiltres, () => {
+  nbAffiches.value = AFFICHAGE_INITIAL
+})
+
+const titre = computed(() => {
+  if (chargement.value) return 'Recherche en cours…'
+  const n = filtresActifs.value ? resultats.value.length : total.value
+  const debut = plafond.value && !filtresActifs.value ? 'Plus de ' : ''
+  const nombre = (plafond.value && !filtresActifs.value ? plafond.value : n).toLocaleString('fr-CA')
+  const mot = n > 1 || debut ? 'produits trouvés' : 'produit trouvé'
+  const pour = requeteActuelle.value ? ` pour « ${requeteActuelle.value} »` : ''
+  return `${debut}${nombre} ${mot}${pour}`
+})
+
+// Ligne sous le titre
 const sousTitre = computed(() => {
   if (!produits.value.length) return ''
+  const sur = plafond.value ? `plus de ${plafond.value}` : String(total.value)
   if (filtresActifs.value) {
-    return `Filtres appliqués aux ${produits.value.length} produits chargés`
+    return plafond.value
+      ? `Filtres appliqués aux ${total.value} premiers produits`
+      : `Filtres appliqués aux ${total.value} produits trouvés`
   }
-  if (aPlus.value || limiteMaxAtteinte.value) {
-    return `Affichage des ${produits.value.length} premiers résultats`
+  if (restants.value > 0) {
+    return `Affichage de ${visibles.value.length} sur ${sur}`
   }
   return ''
 })
 
-const annonce = computed(() => {
-  if (chargement.value) return 'Chargement des produits…'
-  if (erreur.value) return ''
-  const n = resultats.value.length
-  return `${n} ${n > 1 ? 'produits trouvés' : 'produit trouvé'}`
-})
+const annonce = computed(() => (erreur.value ? '' : titre.value))
 
 function selectNutriScore(score) {
   nutriScore.value = nutriScore.value === score ? '' : score
 }
 
+function selectNova(niveau) {
+  novaChoisi.value = novaChoisi.value === niveau ? 0 : niveau
+}
+
+function basculerMarque(cle) {
+  marquesChoisies.value = marquesChoisies.value.includes(cle)
+    ? marquesChoisies.value.filter((m) => m !== cle)
+    : [...marquesChoisies.value, cle]
+}
+
 function resetFilters() {
   nutriScore.value = ''
+  novaChoisi.value = 0
+  marquesChoisies.value = []
   allergenes.value.forEach((a) => (a.active = false))
   categories.value.forEach((c) => (c.active = false))
 }
 
+/* ---COMPARAISON------- */
 const lienComparer = computed(() => `/comparer?codes=${selection.value.join(',')}`)
 
+// Case grisée quand le maximum est atteint
 function selectionBloquee(code) {
   return selection.value.length >= MAX_COMPARAISON && !selection.value.includes(code)
 }
@@ -359,9 +484,7 @@ function viderSelection() {
           <label for="produit" class="visually-hidden">
             Nom ou code-barres du produit
           </label>
-          <input
-            id="produit"
-            v-model="recherche"
+          <input id="produit" v-model="recherche"
             type="search"
             placeholder="Nom du produit ou code-barres…"
             autocomplete="off"
@@ -407,12 +530,41 @@ function viderSelection() {
                 type="button"
                 :class="['nutri', { selected: nutriScore === score }]"
                 :aria-pressed="nutriScore === score"
-                :title="titreNutri(score)"
+                :disabled="!compteNutri[score] && nutriScore !== score"
+                :title="
+                  compteNutri[score] || nutriScore === score
+                    ? titreNutri(score)
+                    : 'Aucun produit avec ce Nutri-Score dans les résultats chargés'
+                "
                 @click="selectNutriScore(score)"
               >
                 {{ score }}
               </button>
             </div>
+
+            <h3 class="sous-filtre">Groupe NOVA</h3>
+            <div class="nutri-buttons" role="group" aria-label="Groupe NOVA">
+              <button
+                v-for="niveau in [1, 2, 3, 4]"
+                :key="niveau"
+                type="button"
+                :class="['nutri', { selected: novaChoisi === niveau }]"
+                :aria-pressed="novaChoisi === niveau"
+                :disabled="!compteNova[niveau] && novaChoisi !== niveau"
+                :title="
+                  compteNova[niveau] || novaChoisi === niveau
+                    ? titreNova(niveau)
+                    : 'Aucun produit avec ce groupe NOVA dans les résultats chargés'
+                "
+                @click="selectNova(niveau)"
+              >
+                {{ niveau }}
+              </button>
+            </div>
+
+            <p v-if="produits.length && !nutriDisponible && !novaDisponible" class="aide">
+              Le Nutri-Score et le groupe NOVA ne sont pas encore renseignés pour ces produits.
+            </p>
           </div>
 
           <div v-if="allergenesDisponibles" class="filtres">
@@ -437,14 +589,37 @@ function viderSelection() {
             <div class="chips">
               <button
                 v-for="categorie in categories"
-                :key="categorie.nom"
+                :key="categorie.code"
                 type="button"
                 :class="{ active: categorie.active }"
                 :aria-pressed="categorie.active"
+                :disabled="!categorie.active && nbCategorie(categorie) === 0"
+                :title="
+                  nbCategorie(categorie) === 0 && !categorie.active
+                    ? 'Aucun produit de cette catégorie dans les résultats chargés'
+                    : ''
+                "
                 @click="categorie.active = !categorie.active"
               >
                 {{ categorie.nom }}
-                <span v-if="categorie.active" aria-hidden="true">×</span>
+                <span class="nb">{{ nbCategorie(categorie) }}</span>
+              </button>
+            </div>
+          </div>
+
+          <div v-if="marques.total >= 2" class="filtres">
+            <h3>Marques</h3>
+            <div class="chips">
+              <button
+                v-for="marque in marques.liste"
+                :key="marque.cle"
+                type="button"
+                :class="{ active: marquesChoisies.includes(marque.cle) }"
+                :aria-pressed="marquesChoisies.includes(marque.cle)"
+                @click="basculerMarque(marque.cle)"
+              >
+                {{ marque.nom }}
+                <span class="nb">{{ marque.n }}</span>
               </button>
             </div>
           </div>
@@ -453,14 +628,7 @@ function viderSelection() {
         <section class="col-12 col-lg-9" aria-labelledby="titre-resultats">
           <div class="resultats-header">
             <div>
-              <h2 id="titre-resultats">
-                <template v-if="chargement">Recherche en cours…</template>
-                <template v-else>
-                  {{ resultats.length }}
-                  {{ resultats.length > 1 ? 'produits trouvés' : 'produit trouvé' }}
-                  <template v-if="requeteActuelle">pour « {{ requeteActuelle }} »</template>
-                </template>
-              </h2>
+              <h2 id="titre-resultats">{{ titre }}</h2>
               <p v-if="sousTitre" class="sous">{{ sousTitre }}</p>
             </div>
             <label class="tri">
@@ -475,13 +643,8 @@ function viderSelection() {
           </div>
 
           <p class="visually-hidden" role="status" aria-live="polite">{{ annonce }}</p>
-
-          <ul v-if="resultats.length" class="liste" :aria-busy="chargementPlus">
-            <li
-              v-for="produit in resultats"
-              :key="produit.code"
-              :class="['ligne', { cochee: selection.includes(produit.code) }]"
-            >
+          <ul v-if="resultats.length" class="liste">
+            <li  v-for="produit in visibles" :key="produit.code"   :class="['ligne', { cochee: selection.includes(produit.code) }]" >
               <input
                 v-model="selection"
                 type="checkbox"
@@ -506,6 +669,9 @@ function viderSelection() {
                 <p v-if="produit.marque" class="marque">{{ produit.marque }}</p>
                 <h3>{{ produit.nom }}</h3>
                 <p v-if="produit.details" class="details">{{ produit.details }}</p>
+                <span v-if="produit.categorieNom" class="etiquette">
+                  {{ produit.categorieNom }}
+                </span>
               </div>
 
               <div class="indicateurs">
@@ -563,7 +729,6 @@ function viderSelection() {
             <button type="button" class="btn-secondaire" @click="charger()">Réessayer</button>
           </div>
 
-          <!-- Le serveur n'a rien trouvé -->
           <div v-else-if="!produits.length" class="vide">
             <p>
               <strong v-if="requeteActuelle">Aucun résultat pour « {{ requeteActuelle }} ».</strong>
@@ -582,20 +747,16 @@ function viderSelection() {
             </button>
           </div>
 
-          <div v-if="resultats.length && aPlus" class="plus">
-            <button
-              type="button"
-              class="btn-secondaire"
-              :disabled="chargementPlus"
-              @click="voirPlus"
-            >
-              {{ chargementPlus ? 'Chargement…' : 'Afficher plus de résultats' }}
+          <div v-if="restants" class="plus">
+            <button type="button" class="btn-secondaire" @click="afficherPlus">
+              Afficher {{ prochainPaquet }}
+              {{ prochainPaquet > 1 ? 'produits' : 'produit' }} de plus
             </button>
+            <p class="restants">{{ restants }} {{ restants > 1 ? 'restants' : 'restant' }}</p>
           </div>
 
-          <p v-if="erreurPlus" class="erreur-plus" role="alert">{{ erreurPlus }}</p>
-
-          <p v-if="resultats.length && limiteMaxAtteinte" class="note">
+          <p v-if="resultats.length && !restants && plafond" class="note">
+            Seuls les {{ plafond }} premiers résultats sont chargés.
             Précisez votre recherche pour obtenir des résultats plus pertinents.
           </p>
         </section>
@@ -641,7 +802,7 @@ function viderSelection() {
   padding-bottom: 90px;
 }
 
-/* Bandeau et recherche  */
+/* ---------- Bandeau et recherche ---------- */
 .hero {
   padding: 42px 0;
   background: linear-gradient(125deg, #fff0e2, #fff9f5 72%);
@@ -683,7 +844,7 @@ h1 {
   cursor: pointer;
 }
 
-/* Contour visible au clavier */
+/* Contour visible au clavier, partout */
 .search button:focus-visible,
 .search:focus-within,
 .nutri:focus-visible,
@@ -699,7 +860,7 @@ h1 {
   outline-offset: 2px;
 }
 
-/* Filtres  */
+/* ---------- Filtres ---------- */
 .bouton-filtres {
   display: none;
   align-items: center;
@@ -743,7 +904,7 @@ h1 {
   }
 }
 
-/* Ordinateur : la colonne reste visible quand on fait défiler la liste */
+/* Ordinateur */
 @media (min-width: 992px) {
   .colonne-filtres {
     position: sticky;
@@ -793,6 +954,17 @@ h1 {
   color: var(--texte-doux);
 }
 
+.filtres h3.sous-filtre {
+  margin-top: 18px;
+}
+
+.aide {
+  margin: 14px 0 0;
+  color: var(--texte-doux);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
 .nutri-buttons {
   display: flex;
   gap: 6px;
@@ -811,7 +983,7 @@ h1 {
   transition: background 0.15s;
 }
 
-.nutri:hover {
+.nutri:hover:not(:disabled) {
   background: #ffe2c9;
 }
 
@@ -821,6 +993,12 @@ h1 {
   color: white;
 }
 
+/* Aucun produit avec cette valeur dans les résultats chargés */
+.nutri:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
 .chips {
   display: flex;
   flex-wrap: wrap;
@@ -828,6 +1006,9 @@ h1 {
 }
 
 .chips button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   padding: 7px 12px;
   border: 1px solid var(--bordure);
   border-radius: 999px;
@@ -839,7 +1020,7 @@ h1 {
   transition: background 0.15s;
 }
 
-.chips button:hover {
+.chips button:hover:not(:disabled) {
   background: #ffe2c9;
 }
 
@@ -849,7 +1030,25 @@ h1 {
   color: white;
 }
 
-/*En-tête des résultats */
+.chips button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.chips .nb {
+  min-width: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: rgba(83, 37, 9, 0.1);
+  font-size: 12px;
+  font-weight: bold;
+  text-align: center;
+}
+
+.chips button.active .nb {
+  background: rgba(255, 255, 255, 0.25);
+}
+
 .resultats-header {
   display: flex;
   align-items: flex-end;
@@ -886,7 +1085,7 @@ h1 {
   font: inherit;
 }
 
-/*Liste de produits*/
+/*  Liste de produits */
 .liste {
   margin: 0;
   padding: 0;
@@ -979,7 +1178,6 @@ h1 {
   margin: 0 0 2px;
   font-size: 20px;
   line-height: 1.2;
-  /* Nom limité à 2 lignes */
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -991,6 +1189,22 @@ h1 {
   margin: 0;
   color: var(--texte-doux);
   font-size: 14px;
+}
+
+/* Étiquette de catégorie, sous le nom */
+.etiquette {
+  display: inline-block;
+  max-width: 100%;
+  margin-top: 6px;
+  padding: 3px 10px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--creme);
+  color: var(--brun-clair);
+  font-size: 12px;
+  font-weight: bold;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .indicateurs {
@@ -1058,7 +1272,6 @@ h1 {
   background: var(--creme);
 }
 
-/*Chargement (cartes grises) */
 .squelette .bloc {
   display: block;
   border-radius: 8px;
@@ -1132,14 +1345,10 @@ h1 {
   text-align: center;
 }
 
-.erreur-plus {
-  margin: 16px 0 0;
-  padding: 12px 16px;
-  border: 1px solid #dabca9;
-  border-radius: 12px;
-  background: #fff0e2;
-  color: var(--brun);
-  text-align: center;
+.restants {
+  margin: 8px 0 0;
+  color: var(--texte-doux);
+  font-size: 13px;
 }
 
 .note {
@@ -1149,7 +1358,7 @@ h1 {
   text-align: center;
 }
 
-/* Barre de comparaison*/
+/* ---------- Barre de comparaison ---------- */
 .barre-comparaison {
   position: fixed;
   right: 0;
@@ -1206,7 +1415,6 @@ h1 {
   pointer-events: none;
 }
 
-/* Petits écrans*/
 @media (max-width: 780px) {
   .hero {
     padding: 32px 0;
