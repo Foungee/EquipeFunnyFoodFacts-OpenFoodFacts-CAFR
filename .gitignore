@@ -5,6 +5,8 @@ node_modules/
 *.log
 npm-debug.log*
 
+.vitest/
+
 # Env
 .env
 .env.local
