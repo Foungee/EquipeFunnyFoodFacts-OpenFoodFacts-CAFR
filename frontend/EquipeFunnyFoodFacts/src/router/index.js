@@ -1,5 +1,7 @@
+
 import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '../views/HomeView.vue'
+
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
@@ -18,18 +20,21 @@ const router = createRouter({
       name: 'product-detail',
       component: () => import('../views/ProductDetailView.vue'),
     },
-
     {
-  path: '/resultat',
-  name: 'resultats',
-  component: () => import('../views/resultatView.vue'),
-},
-{
-  path: '/produits',
-  name: 'produits',
-  component: () => import('../views/ProduitsView.vue'),
-},
-
+      path: '/resultat',
+      name: 'resultats',
+      component: () => import('../views/resultatView.vue'),
+    },
+    {
+      path: '/produits',
+      name: 'produits',
+      component: () => import('../views/ProduitsView.vue'),
+    },
+    {
+      path: '/comparateur',
+      name: 'comparateur',
+      component: () => import('../views/ComparateurView.vue'),
+    },
   ],
 })
 

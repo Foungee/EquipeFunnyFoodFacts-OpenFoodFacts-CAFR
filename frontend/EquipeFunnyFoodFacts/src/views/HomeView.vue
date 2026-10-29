@@ -3,8 +3,10 @@ import { onMounted, ref } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
 
 import { API_URL } from '../config'
+import { useComparateurStore } from '../stores/comparateur'
 
 const router = useRouter()
+const comparateur = useComparateurStore()
 const recherche = ref('')
 const produits = ref([])
 const chargement = ref(false)
@@ -115,6 +117,21 @@ function soumettreRecherche() {
   })
 }
 
+async function ajouterAuComparateur(produit) {
+  try {
+    const reponse = await fetch(`${API_URL.replace(/\/$/, '')}/produits/${produit.id}`)
+    if (reponse.ok) {
+      const complet = await reponse.json()
+      comparateur.ajouter({ id: produit.id, ...complet })
+    } else {
+      comparateur.ajouter(produit)
+    }
+  } catch {
+    comparateur.ajouter(produit)
+  }
+  router.push('/comparateur')
+}
+
 onMounted(() => {
   lireCache()
   chargerProduits()
@@ -175,10 +192,29 @@ onMounted(() => {
       <div v-if="produits.length" class="row g-4">
         <article v-for="produit in produits" :key="produit.id" class="col-12 col-md-4">
           <div class="product-card">
-            <img v-if="produit.image" :src="produit.image" :alt="produit.nom" class="product-photo" loading="lazy"
-              @error="produit.image = ''" />
+            <img
+              v-if="produit.image"
+              :src="produit.image"
+              :alt="produit.nom"
+              class="product-photo"
+              loading="lazy"
+              role="button"
+              tabindex="0"
+              title="Ajouter au comparateur"
+              @error="produit.image = ''"
+              @click="ajouterAuComparateur(produit)"
+              @keydown.enter="ajouterAuComparateur(produit)"
+            />
 
-            <div v-else class="product-photo photo-absente">
+            <div
+              v-else
+              class="product-photo photo-absente"
+              role="button"
+              tabindex="0"
+              title="Ajouter au comparateur"
+              @click="ajouterAuComparateur(produit)"
+              @keydown.enter="ajouterAuComparateur(produit)"
+            >
               Image non disponible
             </div>
 
@@ -296,6 +332,12 @@ h1 span {
   padding: 12px;
   border-radius: 12px;
   background: #fff0e2;
+  cursor: pointer;
+}
+
+.product-photo:hover {
+  outline: 2px solid #f58220;
+  outline-offset: 2px;
 }
 
 .photo-absente {

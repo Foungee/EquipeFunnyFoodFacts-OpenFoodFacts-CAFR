@@ -24,9 +24,16 @@
         <p class="code-barre">{{ produit.prix ? `${produit.prix.toFixed(2)} $` : 'Prix non disponible' }}</p>
 
         <div class="actions">
-          <button type="button" class="btn-principal">Ajouter au comparateur</button>
+          <button
+            type="button"
+            class="btn-principal"
+            :disabled="comparateur.estDansComparateur(route.params.id)"
+            @click="ajouterAuComparateur"
+          >
+            {{ comparateur.estDansComparateur(route.params.id) ? 'Déjà dans le comparateur' : 'Ajouter au comparateur' }}
+          </button>
           <button type="button" class="btn-secondaire">Enregistrer</button>
-          <button type="button" class="btn-secondaire">Corriger la fiche</button>
+         
         </div>
 
         <div class="indicateurs">
@@ -52,13 +59,16 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
+import { useComparateurStore } from '../stores/comparateur'
 import { API_URL } from '../config'
 
 const route = useRoute()
+const router = useRouter()
 const produit = ref(null)
 const chargement = ref(true)
 const erreur = ref('')
+const comparateur = useComparateurStore()
 
 function valeur(v, unite) {
   return v === null || v === undefined ? 'Non disponible' : `${v} ${unite}`
@@ -72,6 +82,11 @@ const textesStatut = {
 function texteNutriScore(statut) {
   if (!statut) return 'Non disponible'
   return textesStatut[statut] || statut
+}
+
+function ajouterAuComparateur() {
+  comparateur.ajouter({ id: route.params.id, ...produit.value })
+  router.push('/comparateur')
 }
 
 onMounted(async () => {
@@ -194,8 +209,13 @@ onMounted(async () => {
   color: white;
 }
 
-.btn-principal:hover {
+.btn-principal:hover:not(:disabled) {
   background: #d96f16;
+}
+
+.btn-principal:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .btn-secondaire {
