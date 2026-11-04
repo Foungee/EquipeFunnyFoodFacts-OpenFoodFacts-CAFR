@@ -1,5 +1,6 @@
 import { query } from './dbController.mjs';
 
+/*
 export async function getProduitByCode(req, res, next) {
   try {
     const rows = await query(
@@ -28,6 +29,7 @@ export async function getProduitByCode(req, res, next) {
     next(err);
   }
 }
+  */
 
 // RÉCUPÉRER UN PRODUIT PAR SON ID
 export async function getProduit(req, res, next) {
@@ -125,6 +127,30 @@ export async function getProduits(req, res, next) {
     const rows = await query(requete, params);
 
     res.status(200).json(rows);
+  } catch (err) {
+    next(err);
+  }
+}
+
+// RÉCUPÉRER TOUS LES PRODUITS SELON UNE CATEGORIE
+export async function getProduitsByCategorie(req, res, next) {
+  try {
+    const { categorie } = req.query;
+
+    let requete = `SELECT
+        m.external_id AS id,
+        m.title AS nom,
+        m.brand AS marque,
+        m.image_url AS image,
+        m.price AS prix,
+        s.taxonomy AS categorie,
+        s.nutri_score_status AS "nutriScore" 
+        FROM my_db.main.metadata m
+        LEFT JOIN my_db.main.scores s ON s.external_id = m.external_id
+        WHERE categorie = ${categorie}`;
+
+    const rows = await query(requete);
+    res.status(200).json(rows)
   } catch (err) {
     next(err);
   }
