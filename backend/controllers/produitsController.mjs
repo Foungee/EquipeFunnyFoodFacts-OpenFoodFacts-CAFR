@@ -53,7 +53,7 @@ export async function getProduit(req, res, next) {
         n.sodium_mg_per_100g AS sodium,
         n.potassium_mg_per_100g AS potassium,
         n.calcium_mg_per_100g AS calcium,
-        n.iron_mg_per_100g AS iron,
+        n.iron_mg_per_100g AS iron
        FROM my_db.main.metadata m
        LEFT JOIN my_db.main.scores s ON s.external_id = m.external_id
        LEFT JOIN my_db.main.nutrition n ON n.external_id = m.external_id
@@ -137,20 +137,52 @@ export async function getProduitsByCategorie(req, res, next) {
   try {
     const { categorie } = req.query;
 
-    let requete = `SELECT
+    if (!categorie) {
+      return res
+        .status(400)
+        .json({ message: 'Le paramètre categorie est requis' });
+    }
+
+    const rows = await query(
+      `SELECT
         m.external_id AS id,
         m.title AS nom,
         m.brand AS marque,
         m.image_url AS image,
         m.price AS prix,
         s.taxonomy AS categorie,
-        s.nutri_score_status AS "nutriScore" 
-        FROM my_db.main.metadata m
-        LEFT JOIN my_db.main.scores s ON s.external_id = m.external_id
-        WHERE categorie = ${categorie}`;
+        s.nutri_score_status AS "nutriScore"
+       FROM my_db.main.metadata m
+       LEFT JOIN my_db.main.scores s ON s.external_id = m.external_id
+       WHERE s.taxonomy = $1
+       ORDER BY m.title ASC`,
+      [categorie],
+    );
 
-    const rows = await query(requete);
-    res.status(200).json(rows)
+    res.status(200).json(rows);
+  } catch (err) {
+    next(err);
+  }
+}
+
+// RÉCUPÉRER TOUS LES PRODUITS (SANS LIMITE)
+export async function getTousLesProduits(req, res, next) {
+  try {
+    const rows = await query(
+      `SELECT
+        m.external_id AS id,
+        m.title AS nom,
+        m.brand AS marque,
+        m.image_url AS image,
+        m.price AS prix,
+        s.taxonomy AS categorie,
+        s.nutri_score_status AS "nutriScore"
+       FROM my_db.main.metadata m
+       LEFT JOIN my_db.main.scores s ON s.external_id = m.external_id
+       ORDER BY m.title ASC`,
+    );
+
+    res.status(200).json(rows);
   } catch (err) {
     next(err);
   }
