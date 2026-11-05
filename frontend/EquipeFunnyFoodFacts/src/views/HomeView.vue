@@ -1,114 +1,52 @@
 <script setup>
 import { onMounted, ref } from 'vue'
-import { RouterLink, useRouter } from 'vue-router'
-
+import { useRouter } from 'vue-router'
 import { API_URL } from '../config'
-import { useComparateurStore } from '../stores/comparateur'
 
 const router = useRouter()
-const comparateur = useComparateurStore()
 const recherche = ref('')
-const produits = ref([])
-const chargement = ref(false)
-const erreurProduits = ref('')
-const messageCache = ref('')
+const erreurCategories = ref('')
 
-const cleCache = 'accueil-motherduck-produits-v1'
+const categories = ref([
+  { code: 'DAIRY', nom: 'Produits laitiers', nombre: null },
+  { code: 'BAKERY', nom: 'Boulangerie', nombre: null },
+  { code: 'SNACKS', nom: 'Collations', nombre: null },
+  { code: 'BEVERAGES', nom: 'Boissons', nombre: null },
+  { code: 'GENERAL_GROCERY', nom: 'Épicerie générale', nombre: null },
+  { code: 'FROZEN', nom: 'Surgelés', nombre: null },
+  { code: 'PRODUCE', nom: 'Fruits et légumes', nombre: null },
+  { code: 'BREAKFAST', nom: 'Petit-déjeuner', nombre: null },
+])
 
-
-function normaliserProduits(liste) {
-  return liste
-    .filter((produit) => produit && produit.id)
-    .slice(0, 12)
-    .map((produit) => ({
-      id: String(produit.id),
-      nom:
-        typeof produit.nom === 'string' && produit.nom.trim()
-          ? produit.nom
-          : 'Nom non renseigné',
-      marque: typeof produit.marque === 'string' ? produit.marque : '',
-      image: typeof produit.image === 'string' ? produit.image : '',
-    }))
-}
-function lireCache() {
-  try {
-    const sauvegarde = JSON.parse(localStorage.getItem(cleCache))
-
-    if (
-      !sauvegarde ||
-      !Number.isFinite(sauvegarde.date) ||
-      !Array.isArray(sauvegarde.produits)
-    ) {
-      return
-    }
-
-    produits.value = normaliserProduits(sauvegarde.produits)
-
-    if (produits.value.length) {
-      const date = new Date(sauvegarde.date).toLocaleString('fr-CA')
-      messageCache.value = `Dernière sauvegarde : ${date}.`
-    }
-  } catch (erreur) {
-    console.warn('Lecture de la sauvegarde impossible :', erreur)
-  }
-}
-
-function sauvegarderProduits() {
-  try {
-    localStorage.setItem(
-      cleCache,
-      JSON.stringify({
-        produits: produits.value,
-        date: Date.now(),
-      }),
-    )
-  } catch (erreur) {
-    console.warn('Sauvegarde locale impossible :', erreur)
-  }
-}
-
-async function chargerProduits() {
-  if (chargement.value) return
-
-  chargement.value = true
-  erreurProduits.value = ''
-
-  const controleur = new AbortController()
-  const delai = setTimeout(() => controleur.abort(), 20000)
-
+async function chargerCategories() {
   try {
     const reponse = await fetch(
-      `${API_URL.replace(/\/$/, '')}/produits?limit=12`,
-      { signal: controleur.signal },
+      `${API_URL.replace(/\/$/, '')}/produits/categories`,
     )
 
     if (!reponse.ok) {
-      throw new Error(`Erreur HTTP ${reponse.status}`)
+      throw new Error('Chargement des catégories impossible')
     }
 
     const donnees = await reponse.json()
 
-    if (!Array.isArray(donnees)) {
-      throw new Error('Le serveur ne renvoie pas une liste de produits.')
+    // Associer chaque compteur à la bonne catégorie.
+    for (const categorie of categories.value) {
+      const resultat = donnees.find(
+        (element) => element.code === categorie.code,
+      )
+
+      categorie.nombre = resultat ? Number(resultat.nombre) : 0
     }
-
-    produits.value = normaliserProduits(donnees)
-    messageCache.value = ''
-    sauvegarderProduits()
   } catch (erreur) {
-    console.error('Chargement des produits :', erreur)
-
-    erreurProduits.value = produits.value.length
-      ? 'Actualisation impossible. Les derniers produits chargés restent affichés.'
-      : 'Impossible de charger les produits. Réessayez.'
-  } finally {
-    clearTimeout(delai)
-    chargement.value = false
+    console.error(erreur)
+    erreurCategories.value = 'Les compteurs sont temporairement indisponibles.'
   }
 }
 
 function soumettreRecherche() {
   const texte = recherche.value.trim()
+
   if (!texte) return
 
   router.push({
@@ -117,131 +55,61 @@ function soumettreRecherche() {
   })
 }
 
-async function ajouterAuComparateur(produit) {
-  try {
-    const reponse = await fetch(`${API_URL.replace(/\/$/, '')}/produits/${produit.id}`)
-    if (reponse.ok) {
-      const complet = await reponse.json()
-      comparateur.ajouter({ id: produit.id, ...complet })
-    } else {
-      comparateur.ajouter(produit)
-    }
-  } catch {
-    comparateur.ajouter(produit)
-  }
-  router.push('/comparateur')
-}
-
-onMounted(() => {
-  lireCache()
-  chargerProduits()
-})
+onMounted(chargerCategories)
 </script>
 
 <template>
   <main>
     <section class="hero">
       <div class="container">
-        <div class="row align-items-center g-4">
-          <div class="col-12 col-lg-7">
-            <h1>Comprenez mieux <span>ce que vous mangez.</span></h1>
+        <h1>Comprenez mieux <span>ce que vous mangez.</span></h1>
 
-            <form class="search" @submit.prevent="soumettreRecherche">
-              <label for="produit" class="visually-hidden">
-                Nom ou code-barres du produit
-              </label>
+        <form class="search" @submit.prevent="soumettreRecherche">
+          <label for="recherche-accueil" class="visually-hidden">
+            Rechercher un produit
+          </label>
 
-              <input id="produit" v-model="recherche" type="search" placeholder="Nom du produit ou code-barres…"
-                required />
+          <input id="recherche-accueil" v-model="recherche" type="search" placeholder="Rechercher un produit…"
+            required />
 
-              <button type="submit">Rechercher</button>
-            </form>
-
-          </div>
-        </div>
+          <button type="submit">Rechercher</button>
+        </form>
       </div>
     </section>
 
-    <section class="produits container py-5" aria-labelledby="titre-produits">
-      <h2 id="titre-produits">Quelques produits à découvrir</h2>
+    <section class="explorer container" aria-labelledby="titre-explorer">
+      <div class="entete-explorer">
+        <h2 id="titre-explorer">Explorer</h2>
 
-      <p v-if="chargement" role="status">
-        {{
-          produits.length
-            ? 'Actualisation des produits…'
-            : 'Chargement des produits…'
-        }}
-      </p>
-
-      <div v-if="erreurProduits" class="message-erreur" role="status">
-        <p>{{ erreurProduits }}</p>
-
-        <button type="button" class="bouton-reessayer" :disabled="chargement" @click="chargerProduits">
-          {{ chargement ? 'Chargement…' : 'Réessayer' }}
-        </button>
       </div>
 
-      <p v-if="messageCache" class="message-cache" role="status">
-        {{ messageCache }}
+      <p v-if="erreurCategories" role="status">
+        {{ erreurCategories }}
       </p>
 
-      <p v-if="!chargement && !erreurProduits && !produits.length">
-        Aucun produit disponible pour le moment.
-      </p>
+      <div class="row g-3">
+        <div v-for="categorie in categories" :key="categorie.code" class="col-12 col-sm-6 col-lg-3">
+          <RouterLink class="carte-categorie" :to="{
+            name: 'categorie',
+            params: { code: categorie.code },
+            query: { nom: categorie.nom },
+          }">
+            <span v-if="categorie.nombre !== null" class="nombre-produits">
+              {{ categorie.nombre }} produits
+            </span>
 
-      <div v-if="produits.length" class="row g-4">
-        <article v-for="produit in produits" :key="produit.id" class="col-12 col-md-4">
-          <div class="product-card">
-            <img
-              v-if="produit.image"
-              :src="produit.image"
-              :alt="produit.nom"
-              class="product-photo"
-              loading="lazy"
-              role="button"
-              tabindex="0"
-              title="Ajouter au comparateur"
-              @error="produit.image = ''"
-              @click="ajouterAuComparateur(produit)"
-              @keydown.enter="ajouterAuComparateur(produit)"
-            />
-
-            <div
-              v-else
-              class="product-photo photo-absente"
-              role="button"
-              tabindex="0"
-              title="Ajouter au comparateur"
-              @click="ajouterAuComparateur(produit)"
-              @keydown.enter="ajouterAuComparateur(produit)"
-            >
-              Image non disponible
-            </div>
-
-            <p v-if="produit.marque" class="product-brand">
-              {{ produit.marque }}
-            </p>
-
-            <h3>{{ produit.nom }}</h3>
-
-
-            <RouterLink :to="`/produit/${produit.id}`">
-              <i class="bi bi-eye-fill" aria-hidden="true"></i>
-              Voir la fiche
-            </RouterLink>
-          </div>
-        </article>
+            <h3>{{ categorie.nom }}</h3>
+          </RouterLink>
+        </div>
       </div>
     </section>
 
     <section class="contribution container" aria-labelledby="titre-contribution">
       <div>
         <h2 id="titre-contribution">Une base construite ensemble</h2>
-
         <p>
           Open Food Facts est un projet collaboratif animé par des bénévoles.
-          Chacun peut aider à enrichir les informations sur les produits
-          alimentaires.
+          Chacun peut aider à enrichir les informations sur les produits alimentaires.
         </p>
       </div>
 
@@ -254,13 +122,14 @@ onMounted(() => {
 
 <style scoped>
 .hero {
-  padding: 42px 0;
-  background: linear-gradient(125deg, #fff0e2, #fff9f5 72%);
+  padding: 48px 0;
+  background: linear-gradient(125deg, #fff0e2, #fff9f5);
 }
 
 h1 {
-  margin: 16px 0;
-  font-size: clamp(38px, 4vw, 56px);
+  max-width: 750px;
+  margin: 0 0 24px;
+  font-size: clamp(36px, 4vw, 56px);
   line-height: 1.1;
 }
 
@@ -271,10 +140,9 @@ h1 span {
 .search {
   display: flex;
   max-width: 650px;
-  margin-top: 18px;
   padding: 6px;
   border: 1px solid #e8c9b7;
-  border-radius: 14px;
+  border-radius: 12px;
   background: white;
 }
 
@@ -287,120 +155,52 @@ h1 span {
   font: inherit;
 }
 
-.search input:focus-visible {
-  outline: 2px solid #713613;
-  outline-offset: -2px;
-  border-radius: 8px;
-}
-
 .search button {
   padding: 14px 20px;
   border: 0;
-  border-radius: 10px;
-  background: #532509;
-  color: white;
-  font: inherit;
-  font-weight: bold;
-  cursor: pointer;
-}
-
-.search-status {
-  margin-top: 10px;
-  color: #713613;
-}
-
-.produits h2 {
-  margin-bottom: 20px;
-}
-
-.product-card {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  padding: 20px;
-  border: 1px solid #edd9cc;
-  border-radius: 24px;
-  background: white;
-}
-
-.product-photo {
-  display: block;
-  width: 100%;
-  height: 190px;
-  object-fit: contain;
-  margin-bottom: 18px;
-  padding: 12px;
-  border-radius: 12px;
-  background: #fff0e2;
-  cursor: pointer;
-}
-
-.product-photo:hover {
-  outline: 2px solid #f58220;
-  outline-offset: 2px;
-}
-
-.photo-absente {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #67594f;
-  text-align: center;
-}
-
-.product-brand {
-  margin: 0 0 6px;
-  color: #67594f;
-  font-size: 14px;
-}
-
-.product-card h3 {
-  margin-bottom: 16px;
-  font-size: 21px;
-  overflow-wrap: anywhere;
-}
-
-.product-card a {
-  margin-top: auto;
-  color: #713613;
-  font-weight: bold;
-}
-
-.product-card a i {
-  margin-right: 5px;
-}
-
-.message-erreur {
-  margin-bottom: 20px;
-  padding: 16px;
-  border: 1px solid #dabca9;
-  border-radius: 12px;
-  background: #fff0e2;
-  color: #532509;
-}
-
-.message-erreur p {
-  margin: 0 0 10px;
-}
-
-.bouton-reessayer {
-  padding: 10px 16px;
-  border: 0;
   border-radius: 8px;
   background: #532509;
   color: white;
   font: inherit;
+  font-weight: bold;
   cursor: pointer;
 }
 
-.bouton-reessayer:disabled {
-  opacity: 0.6;
-  cursor: wait;
+.explorer {
+  padding-top: 48px;
+  padding-bottom: 48px;
 }
 
-.message-cache {
-  color: #67594f;
-  font-size: 14px;
+.entete-explorer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.entete-explorer h2 {
+  margin: 0;
+}
+
+.carte-categorie {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 110px;
+  height: 100%;
+  padding: 20px;
+  border: 1px solid #dabca9;
+  border-radius: 12px;
+  background: #fff9f5;
+  text-align: center;
+}
+
+.carte-categorie h3 {
+  margin: 0;
+  color: #532509;
+  font-size: 18px;
 }
 
 .contribution {
@@ -410,10 +210,11 @@ h1 span {
   gap: 24px;
   padding-top: 28px;
   padding-bottom: 28px;
+  border-top: 1px solid #edd9cc;
 }
 
 .contribution h2 {
-  margin: 0 0 6px;
+  font-size: 24px;
 }
 
 .contribution p {
@@ -423,27 +224,31 @@ h1 span {
   line-height: 1.6;
 }
 
+a {
+  color: #713613;
+  font-weight: bold;
+}
+
 .contribution>a {
   flex-shrink: 0;
   padding: 14px 18px;
   border: 1px solid #dabca9;
   border-radius: 10px;
-  background: white;
-  color: #713613;
-  font-weight: bold;
+  text-decoration: none;
 }
 
+a:hover {
+  text-decoration: underline;
+}
+
+input:focus-visible,
 button:focus-visible,
 a:focus-visible {
   outline: 3px solid #713613;
   outline-offset: 3px;
 }
 
-@media (max-width: 780px) {
-  .hero {
-    padding: 50px 0;
-  }
-
+@media (max-width: 700px) {
   .contribution {
     flex-direction: column;
     align-items: flex-start;
@@ -455,9 +260,34 @@ a:focus-visible {
     flex-direction: column;
     gap: 6px;
   }
+}
 
-  .search button {
-    width: 100%;
-  }
+.carte-categorie {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 110px;
+  height: 100%;
+  padding: 20px;
+  border: 1px solid #dabca9;
+  border-radius: 12px;
+  background: #fff9f5;
+  text-align: center;
+}
+.carte-categorie {
+  text-decoration: none;
+}
+
+.carte-categorie:hover {
+  background: #fff0e2;
+  border-color: #713613;
+  text-decoration: none;
+}
+
+.nombre-produits {
+  color: #713613;
+  font-size: 14px;
 }
 </style>
