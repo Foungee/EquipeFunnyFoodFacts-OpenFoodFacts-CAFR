@@ -91,7 +91,7 @@ function ajouterAuComparateur() {
 
 onMounted(async () => {
   try {
-    const reponse = await fetch(`${API_URL}/produits/${route.params.id}`)
+    const reponse = await fetch(`${API_URL.replace(/\/$/, '')}/produits/${route.params.id}`)
     if (!reponse.ok) {
       erreur.value = 'Produit introuvable.'
       return
