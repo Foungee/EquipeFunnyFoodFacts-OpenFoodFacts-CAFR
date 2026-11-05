@@ -1,5 +1,6 @@
 import { query } from './dbController.mjs';
 
+/*
 export async function getProduitByCode(req, res, next) {
   try {
     const rows = await query(
@@ -28,6 +29,7 @@ export async function getProduitByCode(req, res, next) {
     next(err);
   }
 }
+  */
 
 // RÉCUPÉRER UN PRODUIT PAR SON ID
 export async function getProduit(req, res, next) {
@@ -41,9 +43,17 @@ export async function getProduit(req, res, next) {
         s.taxonomy AS categorie,
         s.nutri_score_status AS "nutriScore",
         n.calories_per_100g AS calories,
-        n.protein_g_per_100g AS proteines,
         n.fat_g_per_100g AS lipides,
-        n.carbohydrate_g_per_100g AS glucides
+        n.saturated_fat_g_per_100g AS satures,
+        n.carbohydrate_g_per_100g AS glucides,
+        n.fibre_g_per_100g AS fibre,
+        n.sugars_g_per_100g AS sucres,
+        n.protein_g_per_100g AS proteines,
+        n.cholesterol_mg_per_100g AS cholesterol,
+        n.sodium_mg_per_100g AS sodium,
+        n.potassium_mg_per_100g AS potassium,
+        n.calcium_mg_per_100g AS calcium,
+        n.iron_mg_per_100g AS iron
        FROM my_db.main.metadata m
        LEFT JOIN my_db.main.scores s ON s.external_id = m.external_id
        LEFT JOIN my_db.main.nutrition n ON n.external_id = m.external_id
@@ -115,6 +125,62 @@ export async function getProduits(req, res, next) {
     params.push(parseInt(limit, 10));
 
     const rows = await query(requete, params);
+
+    res.status(200).json(rows);
+  } catch (err) {
+    next(err);
+  }
+}
+
+// RÉCUPÉRER TOUS LES PRODUITS SELON UNE CATEGORIE
+export async function getProduitsByCategorie(req, res, next) {
+  try {
+    const { categorie } = req.query;
+
+    if (!categorie) {
+      return res
+        .status(400)
+        .json({ message: 'Le paramètre categorie est requis' });
+    }
+
+    const rows = await query(
+      `SELECT
+        m.external_id AS id,
+        m.title AS nom,
+        m.brand AS marque,
+        m.image_url AS image,
+        m.price AS prix,
+        s.taxonomy AS categorie,
+        s.nutri_score_status AS "nutriScore"
+       FROM my_db.main.metadata m
+       LEFT JOIN my_db.main.scores s ON s.external_id = m.external_id
+       WHERE s.taxonomy = $1
+       ORDER BY m.title ASC`,
+      [categorie],
+    );
+
+    res.status(200).json(rows);
+  } catch (err) {
+    next(err);
+  }
+}
+
+// RÉCUPÉRER TOUS LES PRODUITS (SANS LIMITE)
+export async function getTousLesProduits(req, res, next) {
+  try {
+    const rows = await query(
+      `SELECT
+        m.external_id AS id,
+        m.title AS nom,
+        m.brand AS marque,
+        m.image_url AS image,
+        m.price AS prix,
+        s.taxonomy AS categorie,
+        s.nutri_score_status AS "nutriScore"
+       FROM my_db.main.metadata m
+       LEFT JOIN my_db.main.scores s ON s.external_id = m.external_id
+       ORDER BY m.title ASC`,
+    );
 
     res.status(200).json(rows);
   } catch (err) {
