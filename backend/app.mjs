@@ -1,5 +1,6 @@
 import express from "express";
 import produitsRoutes from "./routes/produits.mjs";
+import categoriesRoutes from "./routes/categories.mjs";
 
 const app = express();
 
@@ -13,6 +14,7 @@ app.use((req, res, next) => {
 });
 
 app.use("/produits", produitsRoutes);
+app.use("/categories",categoriesRoutes)
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
