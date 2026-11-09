@@ -112,3 +112,21 @@ export async function trouverProduitsParCategorie({ categorie }) {
 
   return rows;
 }
+
+export async function getAllProducts(){
+      const rows = await query(
+      `SELECT
+        m.external_id AS id,
+        m.title AS nom,
+        m.brand AS marque,
+        m.image_url AS image,
+        m.price AS prix,
+        s.taxonomy AS categorie,
+        s.nutri_score_status AS "nutriScore"
+       FROM my_db.main.metadata m
+       LEFT JOIN my_db.main.scores s ON s.external_id = m.external_id
+       ORDER BY m.title ASC`,
+    );
+
+    return rows;
+}
