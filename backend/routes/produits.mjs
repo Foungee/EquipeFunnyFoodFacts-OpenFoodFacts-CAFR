@@ -5,8 +5,8 @@ const router = express.Router();
 
 // router.get("/:code", produitsController.getProduitByCode);
 router.get("/", produitsController.getProduits);
-router.get("/categories", produitsController.getCategories);
 router.get("/categorie", produitsController.getProduitsByCategorie);
+router.get("/tous",produitsController.getTousLesProduits)
 router.get("/:id", produitsController.getProduit);
 
 export default router;
