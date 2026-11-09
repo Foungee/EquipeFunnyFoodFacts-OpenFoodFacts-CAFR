@@ -3,8 +3,7 @@ import { query } from './dbController.mjs';
 
 export async function getProduit(req, res, next) {
   try {
-
-    const produit = getProductById(req.params.id)
+    const produit = await getProductById(req.params.id);
 
     if (!produit) {
       return res.status(404).json({ message: 'Produit introuvable' });
