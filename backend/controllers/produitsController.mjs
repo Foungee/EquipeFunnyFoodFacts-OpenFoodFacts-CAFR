@@ -1,4 +1,5 @@
 import {
+  getAllProducts,
   getProductById,
   trouverProduits,
   trouverProduitsParCategorie,
@@ -66,21 +67,10 @@ export async function getProduitsByCategorie(req, res, next) {
 // RÉCUPÉRER TOUS LES PRODUITS (SANS LIMITE)
 export async function getTousLesProduits(req, res, next) {
   try {
-    const rows = await query(
-      `SELECT
-        m.external_id AS id,
-        m.title AS nom,
-        m.brand AS marque,
-        m.image_url AS image,
-        m.price AS prix,
-        s.taxonomy AS categorie,
-        s.nutri_score_status AS "nutriScore"
-       FROM my_db.main.metadata m
-       LEFT JOIN my_db.main.scores s ON s.external_id = m.external_id
-       ORDER BY m.title ASC`,
-    );
 
-    res.status(200).json(rows);
+    const produits = await getAllProducts()
+
+    res.status(200).json(produits);
   } catch (err) {
     next(err);
   }
