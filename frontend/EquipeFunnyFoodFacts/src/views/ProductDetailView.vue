@@ -43,15 +43,10 @@
           </div>
         </div>
 
-        <div class="nutrition">
-          <h2>Valeurs nutritives (pour 100 g)</h2>
-          <ul class="nutrition-liste">
-            <li><span>Calories</span><span>{{ valeur(produit.calories, 'kcal') }}</span></li>
-            <li><span>Protéines</span><span>{{ valeur(produit.proteines, 'g') }}</span></li>
-            <li><span>Lipides</span><span>{{ valeur(produit.lipides, 'g') }}</span></li>
-            <li><span>Glucides</span><span>{{ valeur(produit.glucides, 'g') }}</span></li>
-          </ul>
-        </div>
+      <div class="nutrition">
+        <h2>Valeurs nutritives (pour 100 g)</h2>
+        <TableauNutrition :produit="produit" />
+      </div>
       </div>
     </div>
   </div>
@@ -61,6 +56,7 @@
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useComparateurStore } from '../stores/comparateur'
+import TableauNutrition from '../components/TableauNutrition.vue'
 import { API_URL } from '../config'
 
 const route = useRoute()
