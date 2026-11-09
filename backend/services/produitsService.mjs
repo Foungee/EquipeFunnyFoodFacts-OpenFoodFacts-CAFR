@@ -109,13 +109,12 @@ export async function trouverProduitsParCategorie({ categorie }) {
     [categorie],
   );
 
-
   return rows;
 }
 
-export async function getAllProducts(){
-      const rows = await query(
-      `SELECT
+export async function getAllProducts() {
+  const rows = await query(
+    `SELECT
         m.external_id AS id,
         m.title AS nom,
         m.brand AS marque,
@@ -126,7 +125,23 @@ export async function getAllProducts(){
        FROM my_db.main.metadata m
        LEFT JOIN my_db.main.scores s ON s.external_id = m.external_id
        ORDER BY m.title ASC`,
-    );
+  );
 
-    return rows;
+  return rows;
+}
+
+export async function countProductByCategorie() {
+  const rows = await query(
+    `SELECT
+        s.taxonomy AS code,
+        COUNT(DISTINCT m.external_id) AS nombre
+       FROM my_db.main.metadata m
+       INNER JOIN my_db.main.scores s
+         ON s.external_id = m.external_id
+       WHERE s.taxonomy IS NOT NULL
+       GROUP BY s.taxonomy
+       ORDER BY s.taxonomy`,
+  );
+
+  return rows
 }
