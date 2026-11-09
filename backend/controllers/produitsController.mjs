@@ -1,10 +1,10 @@
 import {
+  countProductByCategorie,
   getAllProducts,
   getProductById,
   trouverProduits,
   trouverProduitsParCategorie,
 } from '../services/produitsService.mjs';
-import { query } from './dbController.mjs';
 
 export async function getProduit(req, res, next) {
   try {
@@ -78,19 +78,9 @@ export async function getTousLesProduits(req, res, next) {
 // Nombre de produits par catégorie pour l'accueil.
 export async function getCategories(req, res, next) {
   try {
-    const rows = await query(
-      `SELECT
-        s.taxonomy AS code,
-        COUNT(DISTINCT m.external_id) AS nombre
-       FROM my_db.main.metadata m
-       INNER JOIN my_db.main.scores s
-         ON s.external_id = m.external_id
-       WHERE s.taxonomy IS NOT NULL
-       GROUP BY s.taxonomy
-       ORDER BY s.taxonomy`,
-    );
+    const produits = await countProductByCategorie()
 
-    res.status(200).json(rows);
+    res.status(200).json(produits);
   } catch (err) {
     next(err);
   }
