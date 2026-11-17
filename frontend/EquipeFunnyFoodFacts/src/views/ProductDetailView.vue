@@ -62,6 +62,8 @@ import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useComparateurStore } from '../stores/comparateur'
 import { API_URL } from '../config'
+import { useRecommendStore } from '../stores/recommend'
+
 
 const route = useRoute()
 const router = useRouter()
@@ -69,6 +71,8 @@ const produit = ref(null)
 const chargement = ref(true)
 const erreur = ref('')
 const comparateur = useComparateurStore()
+const recommandation = useRecommendStore()
+
 
 function valeur(v, unite) {
   return v === null || v === undefined ? 'Non disponible' : `${v} ${unite}`
@@ -97,6 +101,7 @@ onMounted(async () => {
       return
     }
     produit.value = await reponse.json()
+    recommandation.enregistrerCategorie(produit.value.categorie)
   } catch {
     erreur.value = 'Impossible de contacter le serveur. Vérifie que le backend est démarré.'
   } finally {
