@@ -1,7 +1,7 @@
 <script setup>
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import Comparaison from '../components/Comparaison.vue'
+import ComparaisonProduits from '../components/ComparaisonProduits.vue'
 import { lireCodes } from '../utils/comparaison'
 import { useComparateurStore } from '../stores/comparateur'
 
@@ -76,7 +76,7 @@ onBeforeUnmount(() => clearTimeout(minuteur))
           <button class="bouton principal" type="button" @click="retourRecherche">Choisir un produit</button>
         </section>
 
-        <Comparaison :produits="store.produits" @retirer="retirerProduit" />
+        <ComparaisonProduits :produits="store.produits" @retirer="retirerProduit" />
 
         <div class="bas-page">
           <button class="bouton secondaire" type="button" @click="retourRecherche">← Retour aux résultats</button>

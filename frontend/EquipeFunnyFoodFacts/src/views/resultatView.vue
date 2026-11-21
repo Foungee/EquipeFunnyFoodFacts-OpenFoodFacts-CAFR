@@ -1,7 +1,7 @@
 <script setup>
 import { ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import Recherche from '../components/Recherche.vue'
+import ResultatsRecherche from '../components/ResultatsRecherche.vue'
 import { useRechercheStore } from '../stores/recherche'
 
 const route = useRoute()
@@ -49,7 +49,7 @@ function soumettreRecherche() {
     </section>
 
     <div class="container py-5">
-      <Recherche />
+      <ResultatsRecherche />
     </div>
   </main>
 </template>
