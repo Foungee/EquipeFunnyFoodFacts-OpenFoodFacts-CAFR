@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onBeforeUnmount, ref, watch } from 'vue'
+import { computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import ComparaisonProduits from '../components/ComparaisonProduits.vue'
 import { lireCodes } from '../utils/comparaison'
@@ -23,8 +23,6 @@ function retourRecherche() {
   else router.push({ name: 'resultat' })
 }
 
-
-onBeforeUnmount(() => clearTimeout(minuteur))
 </script>
 
 <template>
@@ -64,10 +62,6 @@ onBeforeUnmount(() => clearTimeout(minuteur))
             <input v-model="store.seulementDifferences" type="checkbox" :disabled="store.produits.length < 2" />
             Afficher seulement les différences
           </label>
-          <div class="actions">
-            <span class="message" v-if="store.produits.length < 2">Ajoutez un deuxième produit pour comparer</span>
-            <button class="bouton principal" type="button" @click="retourRecherche">Ajouter un produit</button>
-          </div>
         </div>
 
         <section v-if="store.produits.length < 2" class="avis">
@@ -180,17 +174,6 @@ h1 {
   width: 18px;
   height: 18px;
   accent-color: var(--brun);
-}
-
-.actions {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.message {
-  color: var(--texte-doux);
-  font-size: 14px;
 }
 
 /* ---------- Boutons ---------- */
