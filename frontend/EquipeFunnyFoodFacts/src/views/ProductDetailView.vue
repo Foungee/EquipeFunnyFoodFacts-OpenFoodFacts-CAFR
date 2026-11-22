@@ -33,7 +33,7 @@
             {{ comparateur.estDansComparateur(route.params.id) ? 'Déjà dans le comparateur' : 'Ajouter au comparateur' }}
           </button>
           <button type="button" class="btn-secondaire">Enregistrer</button>
-         
+
         </div>
 
         <div class="indicateurs">
@@ -66,9 +66,9 @@ const chargement = ref(true)
 const erreur = ref('')
 const comparateur = useComparateurStore()
 
-function valeur(v, unite) {
+/* function valeur(v, unite) {
   return v === null || v === undefined ? 'Non disponible' : `${v} ${unite}`
-}
+} */
 
 const textesStatut = {
   NOT_ELIGIBLE: 'Non calculable',

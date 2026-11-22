@@ -1,31 +1,35 @@
-import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
+import { ref } from 'vue'
+import { appelerApi, convertirProduit } from '../utils/produits'
+
+async function chargerProduit(id) {
+  const donnees = await appelerApi(`/produits/${encodeURIComponent(id)}`)
+  const brut = Array.isArray(donnees) ? donnees[0] : (donnees?.produit ?? donnees)
+  if (!brut || typeof brut !== 'object') throw new Error('Produit invalide.')
+  return convertirProduit({ id, ...brut })
+}
 
 export const useComparateurStore = defineStore('comparateur', () => {
   const produits = ref([])
+  const chargement = ref(false)
+  const erreur = ref('')
+  const seulementDifferences = ref(false)
 
-  const estPlein = computed(() => produits.value.length >= 2)
-
-  function estDansComparateur(id) {
-    return produits.value.some((p) => p.id === id)
-  }
-
-  function ajouter(produit) {
-    if (estDansComparateur(produit.id)) return
-
-    if (estPlein.value) {
-      produits.value.shift()
-    }
-    produits.value.push(produit)
-  }
-
-  function retirer(id) {
-    produits.value = produits.value.filter((p) => p.id !== id)
-  }
-
-  function vider() {
+  async function charger(codes) {
+    erreur.value = ''
     produits.value = []
+    if (!codes.length) return
+
+    chargement.value = true
+    try {
+      produits.value = await Promise.all(codes.map(chargerProduit))
+    } catch (e) {
+      console.error('Chargement de la comparaison :', e)
+      erreur.value = 'Impossible de charger les produits. Vérifiez votre connexion et réessayez.'
+    } finally {
+      chargement.value = false
+    }
   }
 
-  return { produits, estPlein, estDansComparateur, ajouter, retirer, vider }
+  return { produits, chargement, erreur, seulementDifferences, charger }
 })

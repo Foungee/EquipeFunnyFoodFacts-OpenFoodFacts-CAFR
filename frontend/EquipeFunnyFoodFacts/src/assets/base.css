@@ -21,6 +21,25 @@
   --vt-c-text-dark-2: rgba(235, 235, 235, 0.64);
 }
 
+/* Variables partagées par toutes les pages.
+   À importer une seule fois dans main.js : import './assets/theme.css' */
+:root {
+  --orange: #f58220;
+  --brun: #532509;
+  --brun-clair: #713613;
+  --creme: #fff0e2;
+  --creme-clair: #fff9f5;
+  --bordure: #edd9cc;
+  --bordure-forte: #dabca9;
+  --texte-doux: #67594f;
+
+  --nutri-A: #038141;
+  --nutri-B: #4b9f2a;
+  --nutri-C: #c98a00;
+  --nutri-D: #e6620f;
+  --nutri-E: #d52b1e;
+}
+
 /* semantic color variables for this project */
 :root {
   --color-background: var(--vt-c-white);
