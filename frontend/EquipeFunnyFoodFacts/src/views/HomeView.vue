@@ -2,6 +2,7 @@
 import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { API_URL } from '../config'
+import RecommandationsProduits from '../components/RecommandationsProduits.vue'
 
 const router = useRouter()
 const recherche = ref('')
@@ -76,6 +77,7 @@ onMounted(chargerCategories)
         </form>
       </div>
     </section>
+    <RecommandationsProduits />
 
     <section class="explorer container" aria-labelledby="titre-explorer">
       <div class="entete-explorer">
