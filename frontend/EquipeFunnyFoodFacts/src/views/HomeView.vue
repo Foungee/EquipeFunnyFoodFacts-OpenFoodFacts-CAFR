@@ -3,6 +3,7 @@ import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { API_URL } from '../config'
 import RecommandationsProduits from '../components/RecommandationsProduits.vue'
+import PresentationComparateur from '../components/PresentationComparateur.vue'
 
 const router = useRouter()
 const recherche = ref('')
@@ -62,7 +63,9 @@ onMounted(chargerCategories)
 <template>
   <main>
     <section class="hero">
-      <div class="container">
+  <div class="container">
+    <div class="row align-items-center g-5">
+      <div class="col-12 col-lg-7">
         <h1>Comprenez mieux <span>ce que vous mangez.</span></h1>
 
         <form class="search" @submit.prevent="soumettreRecherche">
@@ -70,13 +73,24 @@ onMounted(chargerCategories)
             Rechercher un produit
           </label>
 
-          <input id="recherche-accueil" v-model="recherche" type="search" placeholder="Rechercher un produit…"
-            required />
+          <input
+            id="recherche-accueil"
+            v-model="recherche"
+            type="search"
+            placeholder="Rechercher un produit…"
+            required
+          />
 
           <button type="submit">Rechercher</button>
         </form>
       </div>
-    </section>
+
+      <div class="col-12 col-lg-5">
+        <PresentationComparateur />
+      </div>
+    </div>
+  </div>
+</section>
     <RecommandationsProduits />
 
     <section class="explorer container" aria-labelledby="titre-explorer">
