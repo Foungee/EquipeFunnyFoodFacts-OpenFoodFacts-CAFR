@@ -17,8 +17,8 @@ import { RouterLink, RouterView } from 'vue-router'
         <a href="https://ca.openfoodfacts.org/contribute" target="_blank" rel="noopener noreferrer">
           Contribuer
         </a>
-          <RouterLink to="/comparateur">Comparateur</RouterLink>
-
+          
+          <RouterLink to="/resultat">Comparateur</RouterLink>
         <a href="https://ca.openfoodfacts.org/data" target="_blank" rel="noopener noreferrer">
           Données ouvertes
         </a>
