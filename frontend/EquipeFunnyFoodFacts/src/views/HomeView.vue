@@ -23,7 +23,7 @@ const categories = ref([
 async function chargerCategories() {
   try {
     const reponse = await fetch(
-      `${API_URL.replace(/\/$/, '')}/produits/categories`,
+      `${API_URL.replace(/\/$/, '')}/categories`,
     )
 
     if (!reponse.ok) {
