@@ -24,7 +24,7 @@ import { RouterLink } from 'vue-router'
       Comparez leurs informations nutritionnelles pour faire votre choix.
     </p>
 
-    <RouterLink to="/comparer" class="lien-comparateur">
+    <RouterLink to="/resultat" class="lien-comparateur">
       Découvrir le comparateur
       <i class="bi bi-arrow-right" aria-hidden="true"></i>
     </RouterLink>
