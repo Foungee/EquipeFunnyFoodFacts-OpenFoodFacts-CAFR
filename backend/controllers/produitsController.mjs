@@ -1,61 +1,20 @@
-import { query } from './dbController.mjs';
+import {
+  countProductByCategorie,
+  getAllProducts,
+  getProductById,
+  trouverProduits,
+  trouverProduitsParCategorie,
+} from '../services/produitsService.mjs';
 
-export async function getProduitByCode(req, res, next) {
-  try {
-    const rows = await query(
-      `SELECT
-            code,
-            COALESCE((list_filter(product_name, x -> x.lang = 'fr')[1]).text, product_name[1].text) AS nom,
-            quantity                    AS format,
-            brands,
-            categories,
-            nutriscore_grade            AS "nutriScore",
-            nova_group                  AS "novaGroupe",
-            environmental_score_grade   AS "ecoScore",
-            front_image_url             AS image,
-            COALESCE((list_filter(ingredients_text, x -> x.lang = 'fr')[1]).text, ingredients_text[1].text) AS ingredients
-        FROM produits
-        WHERE code = $1
-        LIMIT 1`,
-      [req.params.code],
-    );
-
-    if (rows.length === 0) {
-      return res.status(404).json({ message: 'Produit introuvable' });
-    }
-    res.status(200).json(rows[0]);
-  } catch (err) {
-    next(err);
-  }
-}
-
-// RÉCUPÉRER UN PRODUIT PAR SON ID
 export async function getProduit(req, res, next) {
   try {
-    const rows = await query(
-      `SELECT
-        m.title AS nom,
-        m.brand AS marque,
-        m.image_url AS image,
-        m.price AS prix,
-        s.taxonomy AS categorie,
-        s.nutri_score_status AS "nutriScore",
-        n.calories_per_100g AS calories,
-        n.protein_g_per_100g AS proteines,
-        n.fat_g_per_100g AS lipides,
-        n.carbohydrate_g_per_100g AS glucides
-       FROM my_db.main.metadata m
-       LEFT JOIN my_db.main.scores s ON s.external_id = m.external_id
-       LEFT JOIN my_db.main.nutrition n ON n.external_id = m.external_id
-       WHERE m.external_id = $1`,
-      [req.params.id],
-    );
+    const produit = await getProductById(req.params.id);
 
-    if (rows.length === 0) {
+    if (!produit) {
       return res.status(404).json({ message: 'Produit introuvable' });
     }
 
-    res.status(200).json(rows[0]);
+    res.status(200).json(produit);
   } catch (err) {
     next(err);
   }
@@ -64,59 +23,64 @@ export async function getProduit(req, res, next) {
 // RÉCUPÉRER LES PRODUITS (15 pour l'instant)
 export async function getProduits(req, res, next) {
   try {
-    const searchParam = req.query.recherche || req.query.search;
-    const { tri, nutriScore, categorie, limit = 15 } = req.query;
-    let requete = `
-      SELECT
-        m.external_id AS id,
-        m.title AS nom,
-        m.brand AS marque,
-        m.image_url AS image,
-        m.price AS prix,
-        s.taxonomy AS categorie,
-        s.nutri_score_status AS "nutriScore"
-       FROM my_db.main.metadata m
-       LEFT JOIN my_db.main.scores s ON s.external_id = m.external_id
-       LEFT JOIN my_db.main.nutrition n ON n.external_id = m.external_id
-       WHERE 1=1
-    `;
+    const {
+      recherche,
+      search,
+      tri,
+      nutriScore,
+      categorie,
+      limit = 15,
+    } = req.query;
+    const produits = await trouverProduits({
+      recherche: recherche || search,
+      tri,
+      nutriScore,
+      categorie,
+      limit,
+    });
 
-    const params = [];
-    let paramIndex = 1;
+    res.status(200).json(produits);
+  } catch (err) {
+    next(err);
+  }
+}
 
-    if (searchParam) {
-      requete += ` AND m.title ILIKE $${paramIndex++}`;
-      params.push(`%${searchParam}%`);
+// RÉCUPÉRER TOUS LES PRODUITS SELON UNE CATEGORIE
+export async function getProduitsByCategorie(req, res, next) {
+  try {
+    const { categorie } = req.query;
+
+    if (!categorie) {
+      return res
+        .status(400)
+        .json({ message: 'Le paramètre categorie est requis' });
     }
 
-    // NUTRI ???
-    if (nutriScore) {
-      requete += ` AND s.nutri_score_status = $${paramIndex++}`;
-      params.push(nutriScore);
-    }
+    const produits = await trouverProduitsParCategorie({categorie})
 
-    // CATEGORIE
-    if (categorie) {
-      requete += ` AND s.taxonomy = $${paramIndex++}`;
-      params.push(categorie);
-    }
+    res.status(200).json(produits);
+  } catch (err) {
+    next(err);
+  }
+}
 
-    // TRI ALPHABETIQUE
-    if (tri === 'az') {
-      requete += ` ORDER BY m.title ASC`;
-    } else if (tri === 'marque') {
-      requete += ` ORDER BY m.brand ASC`;
-    } else {
-      requete += ` ORDER BY m.title ASC`;
-    }
+// RÉCUPÉRER TOUS LES PRODUITS (SANS LIMITE)
+export async function getTousLesProduits(req, res, next) {
+  try {
 
-    // LIMITE
-    requete += ` LIMIT $${paramIndex++}`;
-    params.push(parseInt(limit, 10));
+    const produits = await getAllProducts()
 
-    const rows = await query(requete, params);
+    res.status(200).json(produits);
+  } catch (err) {
+    next(err);
+  }
+}
+// Nombre de produits par catégorie pour l'accueil.
+export async function getCategories(req, res, next) {
+  try {
+    const produits = await countProductByCategorie()
 
-    res.status(200).json(rows);
+    res.status(200).json(produits);
   } catch (err) {
     next(err);
   }

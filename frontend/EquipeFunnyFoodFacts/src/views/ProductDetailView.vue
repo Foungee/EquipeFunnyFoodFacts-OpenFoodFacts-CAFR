@@ -33,7 +33,7 @@
             {{ comparateur.estDansComparateur(route.params.id) ? 'Déjà dans le comparateur' : 'Ajouter au comparateur' }}
           </button>
           <button type="button" class="btn-secondaire">Enregistrer</button>
-         
+
         </div>
 
         <div class="indicateurs">
@@ -43,15 +43,10 @@
           </div>
         </div>
 
-        <div class="nutrition">
-          <h2>Valeurs nutritives (pour 100 g)</h2>
-          <ul class="nutrition-liste">
-            <li><span>Calories</span><span>{{ valeur(produit.calories, 'kcal') }}</span></li>
-            <li><span>Protéines</span><span>{{ valeur(produit.proteines, 'g') }}</span></li>
-            <li><span>Lipides</span><span>{{ valeur(produit.lipides, 'g') }}</span></li>
-            <li><span>Glucides</span><span>{{ valeur(produit.glucides, 'g') }}</span></li>
-          </ul>
-        </div>
+      <div class="nutrition">
+        <h2>Valeurs nutritives (pour 100 g)</h2>
+        <TableauNutrition :produit="produit" />
+      </div>
       </div>
     </div>
   </div>
@@ -61,7 +56,10 @@
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useComparateurStore } from '../stores/comparateur'
+import TableauNutrition from '../components/TableauNutrition.vue'
 import { API_URL } from '../config'
+import { useRecommendStore } from '../stores/recommend'
+
 
 const route = useRoute()
 const router = useRouter()
@@ -69,10 +67,12 @@ const produit = ref(null)
 const chargement = ref(true)
 const erreur = ref('')
 const comparateur = useComparateurStore()
+const recommandation = useRecommendStore()
 
-function valeur(v, unite) {
+
+/* function valeur(v, unite) {
   return v === null || v === undefined ? 'Non disponible' : `${v} ${unite}`
-}
+} */
 
 const textesStatut = {
   NOT_ELIGIBLE: 'Non calculable',
@@ -91,12 +91,13 @@ function ajouterAuComparateur() {
 
 onMounted(async () => {
   try {
-    const reponse = await fetch(`${API_URL}/produits/${route.params.id}`)
+    const reponse = await fetch(`${API_URL.replace(/\/$/, '')}/produits/${route.params.id}`)
     if (!reponse.ok) {
       erreur.value = 'Produit introuvable.'
       return
     }
     produit.value = await reponse.json()
+    recommandation.enregistrerCategorie(produit.value.categorie)
   } catch {
     erreur.value = 'Impossible de contacter le serveur. Vérifie que le backend est démarré.'
   } finally {
