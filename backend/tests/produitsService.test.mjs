@@ -21,7 +21,6 @@ describe('getProductById', () => {
 
     const resultat = await getProductById('ext-123')
 
-    // 1. la requête part avec le bon id
     expect(query).toHaveBeenCalledTimes(1)
     expect(query).toHaveBeenCalledWith(
       expect.stringContaining('FROM my_db.main.metadata'),
