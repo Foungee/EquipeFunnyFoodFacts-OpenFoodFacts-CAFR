@@ -9,18 +9,22 @@ export async function getProductById(id) {
         m.price AS prix,
         s.taxonomy AS categorie,
         s.nutri_score_status AS "nutriScore",
-        n.calories_per_100g AS calories,
-        n.fat_g_per_100g AS lipides,
-        n.saturated_fat_g_per_100g AS satures,
-        n.carbohydrate_g_per_100g AS glucides,
-        n.fibre_g_per_100g AS fibre,
-        n.sugars_g_per_100g AS sucres,
-        n.protein_g_per_100g AS proteines,
-        n.cholesterol_mg_per_100g AS cholesterol,
-        n.sodium_mg_per_100g AS sodium,
-        n.potassium_mg_per_100g AS potassium,
-        n.calcium_mg_per_100g AS calcium,
-        n.iron_mg_per_100g AS iron
+        CASE
+        WHEN n.calories_per_100g IS NOT NULL THEN 'g'
+        WHEN n.calories_per_100ml IS NOT NULL THEN 'ml'
+        END AS unite,
+        COALESCE(n.calories_per_100g, n.calories_per_100ml) AS calories,
+        COALESCE(n.fat_g_per_100g, n.fat_g_per_100ml) AS lipides,
+        COALESCE(n.saturated_fat_g_per_100g,n.saturated_fat_g_per_100ml) AS satures,
+        COALESCE(n.carbohydrate_g_per_100g,n.carbohydrate_g_per_100ml) AS glucides,
+        COALESCE(n.fibre_g_per_100g,n.fibre_g_per_100ml) AS fibre,
+        COALESCE(n.sugars_g_per_100g,n.sugars_g_per_100ml) AS sucres,
+        COALESCE(n.protein_g_per_100g,n.protein_g_per_100ml) AS proteines,
+        COALESCE(n.cholesterol_mg_per_100g,n.cholesterol_mg_per_100ml) AS cholesterol,
+        COALESCE(n.sodium_mg_per_100g,n.sodium_mg_per_100ml) AS sodium,
+        COALESCE(n.potassium_mg_per_100g,n.potassium_mg_per_100ml) AS potassium,
+        COALESCE(n.calcium_mg_per_100g,n.calcium_mg_per_100ml) AS calcium,
+        COALESCE(n.iron_mg_per_100g,n.iron_mg_per_100ml) AS iron
        FROM my_db.main.metadata m
        LEFT JOIN my_db.main.scores s ON s.external_id = m.external_id
        LEFT JOIN my_db.main.nutrition n ON n.external_id = m.external_id
@@ -143,5 +147,5 @@ export async function countProductByCategorie() {
        ORDER BY s.taxonomy`,
   );
 
-  return rows
+  return rows;
 }
