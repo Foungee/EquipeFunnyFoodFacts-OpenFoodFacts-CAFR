@@ -19,6 +19,14 @@ const attributs = [
   { cle: 'proteines', label: 'Protéines', unite: 'g' },
   { cle: 'lipides', label: 'Lipides', unite: 'g' },
   { cle: 'glucides', label: 'Glucides', unite: 'g' },
+  { cle: 'satures', label: 'Lipides saturés', unite: 'g' },
+  { cle: 'sucres', label: 'Sucres', unite: 'g' },
+  { cle: 'fibre', label: 'Fibres', unite: 'g' },
+  { cle: 'cholesterol', label: 'Cholestérol', unite: 'mg' },
+  { cle: 'sodium', label: 'Sodium', unite: 'mg' },
+  { cle: 'potassium', label: 'Potassium', unite: 'mg' },
+  { cle: 'calcium', label: 'Calcium', unite: 'mg' },
+  { cle: 'iron', label: 'Fer', unite: 'mg' },
 ]
 
 function valeur(v, unite) {
