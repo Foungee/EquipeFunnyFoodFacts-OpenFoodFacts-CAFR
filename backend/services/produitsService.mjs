@@ -1,5 +1,11 @@
 import { query } from '../controllers/dbController.mjs';
 
+const COLONNES_NUTRIMENTS = {
+  sodium: { g: 'n.sodium_mg_per_100g', ml: 'n.sodium_mg_per_100ml' },
+  calories: { g: 'n.calories_per_100g', ml: 'n.calories_per_100ml' },
+  proteines: { g: 'n.protein_g_per_100g', ml: 'n.protein_g_per_100ml' },
+};
+
 export async function getProductById(id) {
   const rows = await query(
     `SELECT
@@ -40,7 +46,10 @@ export async function trouverProduits({
   nutriScore,
   categorie,
   limit,
+  unite,
+  filtres = {},
 }) {
+  const uniteValide = unite === 'ml' ? 'ml' : 'g';
   let requete = `
       SELECT
         m.external_id AS id,
@@ -49,9 +58,14 @@ export async function trouverProduits({
         m.image_url AS image,
         m.price AS prix,
         s.taxonomy AS categorie,
-        s.nutri_score_status AS "nutriScore"
+        s.nutri_score_status AS "nutriScore",
+        '${uniteValide}' AS unite,
+        ${COLONNES_NUTRIMENTS.sodium[uniteValide]} AS sodium,
+        ${COLONNES_NUTRIMENTS.calories[uniteValide]} AS calories,
+        ${COLONNES_NUTRIMENTS.proteines[uniteValide]} AS proteines
        FROM my_db.main.metadata m
        LEFT JOIN my_db.main.scores s ON s.external_id = m.external_id
+       LEFT JOIN my_db.main.nutrition n ON n.external_id = m.external_id
        WHERE 1=1
     `;
 
