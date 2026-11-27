@@ -11,7 +11,9 @@ export async function getProduit(req, res, next) {
     const produit = await getProductById(req.params.id);
 
     if (!produit) {
-      return res.status(404).json({ message: 'Produit introuvable' });
+      const err = new Error('Produit introuvable')
+      err.statusCode = 404
+      return next(err)
     }
 
     res.status(200).json(produit);

@@ -1,6 +1,7 @@
 import express from "express";
 import produitsRoutes from "./routes/produits.mjs";
 import categoriesRoutes from "./routes/categories.mjs";
+import {get404, getErrors } from "./controllers/errorController.mjs"
 
 const app = express();
 
@@ -13,8 +14,13 @@ app.use((req, res, next) => {
   next();
 });
 
+
+// ROUTES
 app.use("/produits", produitsRoutes);
 app.use("/categories",categoriesRoutes)
+
+app.use(get404)
+app.use(getErrors)
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
