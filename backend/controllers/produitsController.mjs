@@ -27,6 +27,7 @@ export async function getProduits(req, res, next) {
       recherche,
       search,
       tri,
+      ordre,
       nutriScore,
       categorie,
       limit = 15,
@@ -35,6 +36,7 @@ export async function getProduits(req, res, next) {
     const produits = await trouverProduits({
       recherche: recherche || search,
       tri,
+      ordre,
       nutriScore,
       categorie,
       limit,
