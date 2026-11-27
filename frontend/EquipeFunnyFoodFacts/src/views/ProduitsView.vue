@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { RouterLink } from 'vue-router'
 import { API_URL } from '../config'
 
@@ -7,6 +7,9 @@ const produits = ref([])
 const recherche = ref('')
 const chargement = ref(false)
 const erreur = ref('')
+const unite = ref('g')
+const tri = ref('az')
+const ordre = ref('asc')
 
 function normaliserProduits(liste) {
   return liste
@@ -14,15 +17,17 @@ function normaliserProduits(liste) {
     .map((produit) => ({
       id: String(produit.id),
       nom:
-        typeof produit.nom === 'string' && produit.nom.trim()
-          ? produit.nom
-          : 'Nom non renseigné',
+        typeof produit.nom === 'string' && produit.nom.trim() ? produit.nom : 'Nom non renseigné',
       marque: typeof produit.marque === 'string' ? produit.marque : '',
       image: typeof produit.image === 'string' ? produit.image : '',
       details: typeof produit.details === 'string' ? produit.details : '',
       categorie: typeof produit.categorie === 'string' ? produit.categorie : '',
       nutriScore: String(produit.nutriScore ?? produit.nutriscore ?? '').toUpperCase(),
       nova: produit.nova ?? null,
+      unite: produit.unite === 'ml' ? 'ml' : 'g',
+      sodium: produit.sodium ?? null,
+      calories: produit.calories ?? null,
+      proteines: produit.proteines ?? null,
     }))
 }
 
@@ -34,8 +39,13 @@ async function chargerProduits() {
   const delai = setTimeout(() => controleur.abort(), 20000)
 
   try {
-    // Aucun paramètre limit : la page demande tous les produits disponibles.
-    const reponse = await fetch(`${API_URL.replace(/\/$/, '')}/produits`, {
+    const params = new URLSearchParams({
+      unite: unite.value,
+      tri: tri.value,
+      ordre: ordre.value,
+      limit: 200,
+    })
+    const reponse = await fetch(`${API_URL.replace(/\/$/, '')}/produits?${params}`, {
       signal: controleur.signal,
     })
 
@@ -53,9 +63,10 @@ async function chargerProduits() {
     produits.value = normaliserProduits(donnees)
   } catch (e) {
     console.error('Chargement des produits :', e)
-    erreur.value = e.name === 'AbortError'
-      ? 'Le serveur met trop de temps à répondre. Réessayez.'
-      : 'Impossible de charger les produits. Vérifiez la connexion au serveur, puis réessayez.'
+    erreur.value =
+      e.name === 'AbortError'
+        ? 'Le serveur met trop de temps à répondre. Réessayez.'
+        : 'Impossible de charger les produits. Vérifiez la connexion au serveur, puis réessayez.'
   } finally {
     clearTimeout(delai)
     chargement.value = false
@@ -67,12 +78,20 @@ const produitsFiltres = computed(() => {
   if (!terme) return produits.value
 
   return produits.value.filter((produit) =>
-    [produit.nom, produit.marque, produit.categorie, produit.details]
-      .some((valeur) => valeur.toLocaleLowerCase('fr').includes(terme)),
+    [produit.nom, produit.marque, produit.categorie, produit.details].some((valeur) =>
+      valeur.toLocaleLowerCase('fr').includes(terme),
+    ),
   )
 })
 
+// Formate un nombre avec au plus 2 décimales, au format français (virgule)
+function formaterNombre(valeur) {
+  if (valeur == null) return '—'
+  return Number(valeur).toLocaleString('fr-CA', { maximumFractionDigits: 2 })
+}
+
 onMounted(chargerProduits)
+watch([unite, tri, ordre], chargerProduits)
 </script>
 
 <template>
@@ -94,17 +113,48 @@ onMounted(chargerProduits)
 
     <section class="container py-5" aria-labelledby="titre-liste-produits">
       <div class="entete-liste">
+        <div class="controles-tri">
+          <label>
+            Unité
+            <select v-model="unite">
+              <option value="g">Pour 100 g</option>
+              <option value="ml">Pour 100 ml</option>
+            </select>
+          </label>
+          <label>
+            Trier par
+            <select v-model="tri">
+              <option value="az">Nom (A-Z)</option>
+              <option value="marque">Marque</option>
+              <option value="sodium">Sodium</option>
+              <option value="calories">Calories</option>
+              <option value="proteines">Protéines</option>
+            </select>
+          </label>
+          <label>
+            Ordre
+            <select v-model="ordre">
+              <option value="asc">A-Z</option>
+              <option value="desc">Z-A</option>
+            </select>
+          </label>
+        </div>
         <h2 id="titre-liste-produits">
           {{ produitsFiltres.length }}
           {{ produitsFiltres.length > 1 ? 'produits' : 'produit' }}
           {{ recherche.trim() ? 'trouvé(s)' : 'disponible(s)' }}
         </h2>
-        <button type="button" class="bouton-secondaire" :disabled="chargement" @click="chargerProduits">
+        <button
+          type="button"
+          class="bouton-secondaire"
+          :disabled="chargement"
+          @click="chargerProduits"
+        >
           {{ chargement ? 'Chargement…' : 'Actualiser' }}
         </button>
       </div>
 
-      <p v-if="chargement" role="status">Chargement de tous les produits…</p>
+      <p v-if="chargement" role="status">Chargement...</p>
 
       <div v-else-if="erreur" class="message" role="alert">
         <p>{{ erreur }}</p>
@@ -137,8 +187,15 @@ onMounted(chargerProduits)
             <p v-if="produit.categorie" class="detail">Catégorie : {{ produit.categorie }}</p>
             <p v-if="produit.details" class="detail">{{ produit.details }}</p>
 
+            <p class="detail">
+              Pour 100 {{ produit.unite }} : sodium {{ formaterNombre(produit.sodium ?? '—') }} mg · calories
+              {{ formaterNombre(produit.calories ?? '—') }} kcal · protéines {{ formaterNombre(produit.proteines ?? '—') }} g
+            </p>
             <div class="badges">
-              <span v-if="'ABCDE'.includes(produit.nutriScore) && produit.nutriScore.length === 1" class="badge-nutri">
+              <span
+                v-if="'ABCDE'.includes(produit.nutriScore) && produit.nutriScore.length === 1"
+                class="badge-nutri"
+              >
                 Nutri-Score {{ produit.nutriScore }}
               </span>
               <span v-if="produit.nova != null && produit.nova !== ''" class="badge-nova">
@@ -157,6 +214,22 @@ onMounted(chargerProduits)
 </template>
 
 <style scoped>
+.controles-tri {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.controles-tri select {
+  display: block;
+  margin-top: 4px;
+  padding: 8px 10px;
+  border: 1px solid #dabca9;
+  border-radius: 10px;
+  background: white;
+  font: inherit;
+}
+
 .page-produits {
   --orange: #f58220;
   --brun: #532509;
@@ -219,7 +292,9 @@ onMounted(chargerProduits)
   border: 1px solid var(--bordure);
   border-radius: 20px;
   background: white;
-  transition: box-shadow 0.15s, transform 0.15s;
+  transition:
+    box-shadow 0.15s,
+    transform 0.15s;
 }
 
 .carte-produit:hover {
