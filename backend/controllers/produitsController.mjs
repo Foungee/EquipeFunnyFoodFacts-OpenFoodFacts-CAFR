@@ -41,7 +41,7 @@ export async function getProduits(req, res, next) {
       categorie,
       limit,
       unite,
-      filtres : req.query
+      filtres: req.query
     });
 
     res.status(200).json(produits);

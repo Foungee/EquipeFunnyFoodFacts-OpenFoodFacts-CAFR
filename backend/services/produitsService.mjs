@@ -89,6 +89,9 @@ export async function trouverProduits({
     requete += ` AND s.taxonomy = $${paramIndex++}`;
     params.push(categorie);
   }
+  
+  // UNITE : ne garder que les produits ayant des données dans l'unité choisie
+  requete += ` AND ${COLONNES_NUTRIMENTS.calories[uniteValide]} IS NOT NULL`;
 
   // SEUILS NUTRITIONNELS (Min / Max)
   const operateurs = [
