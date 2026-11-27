@@ -43,6 +43,7 @@ export async function getProductById(id) {
 export async function trouverProduits({
   recherche,
   tri,
+  ordre,
   nutriScore,
   categorie,
   limit,
@@ -89,14 +90,47 @@ export async function trouverProduits({
     params.push(categorie);
   }
 
-  // TRI ALPHABETIQUE
+  // SEUILS NUTRITIONNELS (Min / Max)
+  const operateurs = [
+    ['Min', '>='],
+    ['Max', '<='],
+  ];
+
+  for (const nom of Object.keys(COLONNES_NUTRIMENTS)) {
+    const colonneNutriment = COLONNES_NUTRIMENTS[nom][uniteValide];
+
+    for (const [suffixe, operateur] of operateurs) {
+      const brut = filtres[`${nom}${suffixe}`];
+
+      if (brut === undefined || brut === '') {
+        continue;
+      }
+
+      const valeur = Number(brut);
+
+      if (!Number.isFinite(valeur) || valeur < 0) {
+        continue;
+      }
+
+      requete += ` AND ${colonneNutriment} ${operateur} $${paramIndex++}`;
+      params.push(valeur);
+    }
+  }
+
+  // TRI
   const colonnesTri = {
     az: 'm.title',
     marque: 'm.brand',
+    sodium: COLONNES_NUTRIMENTS.sodium[uniteValide],
+    calories: COLONNES_NUTRIMENTS.calories[uniteValide],
+    proteines: COLONNES_NUTRIMENTS.proteines[uniteValide],
   };
 
-  const colonne = colonnesTri[tri] ?? 'm.title';
-  requete += ` ORDER BY ${colonne} ASC`;
+  const colonne = Object.hasOwn(colonnesTri, tri)
+    ? colonnesTri[tri]
+    : 'm.title';
+  const sens = ordre === 'desc' ? 'DESC' : 'ASC';
+  requete += ` ORDER BY ${colonne} ${sens} NULLS LAST`;
 
   // LIMITE
   let nombre = parseInt(limit, 10);
