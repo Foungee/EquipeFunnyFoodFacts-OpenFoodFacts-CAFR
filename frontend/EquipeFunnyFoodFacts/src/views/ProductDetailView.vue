@@ -35,7 +35,7 @@
         </div>
 
       <div class="nutrition">
-        <h2>Valeurs nutritives (pour 100 g)</h2>
+        <h2>Valeurs nutritives (pour 100 {{ produit.unite }})</h2>
         <TableauNutrition :produit="produit" />
       </div>
       </div>

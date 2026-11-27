@@ -27,16 +27,21 @@ export async function getProduits(req, res, next) {
       recherche,
       search,
       tri,
+      ordre,
       nutriScore,
       categorie,
       limit = 15,
+      unite,
     } = req.query;
     const produits = await trouverProduits({
       recherche: recherche || search,
       tri,
+      ordre,
       nutriScore,
       categorie,
       limit,
+      unite,
+      filtres: req.query
     });
 
     res.status(200).json(produits);

@@ -1,5 +1,11 @@
 import { query } from '../controllers/dbController.mjs';
 
+const COLONNES_NUTRIMENTS = {
+  sodium: { g: 'n.sodium_mg_per_100g', ml: 'n.sodium_mg_per_100ml' },
+  calories: { g: 'n.calories_per_100g', ml: 'n.calories_per_100ml' },
+  proteines: { g: 'n.protein_g_per_100g', ml: 'n.protein_g_per_100ml' },
+};
+
 export async function getProductById(id) {
   const rows = await query(
     `SELECT
@@ -37,10 +43,14 @@ export async function getProductById(id) {
 export async function trouverProduits({
   recherche,
   tri,
+  ordre,
   nutriScore,
   categorie,
   limit,
+  unite,
+  filtres = {},
 }) {
+  const uniteValide = unite === 'ml' ? 'ml' : 'g';
   let requete = `
       SELECT
         m.external_id AS id,
@@ -49,9 +59,14 @@ export async function trouverProduits({
         m.image_url AS image,
         m.price AS prix,
         s.taxonomy AS categorie,
-        s.nutri_score_status AS "nutriScore"
+        s.nutri_score_status AS "nutriScore",
+        '${uniteValide}' AS unite,
+        ${COLONNES_NUTRIMENTS.sodium[uniteValide]} AS sodium,
+        ${COLONNES_NUTRIMENTS.calories[uniteValide]} AS calories,
+        ${COLONNES_NUTRIMENTS.proteines[uniteValide]} AS proteines
        FROM my_db.main.metadata m
        LEFT JOIN my_db.main.scores s ON s.external_id = m.external_id
+       LEFT JOIN my_db.main.nutrition n ON n.external_id = m.external_id
        WHERE 1=1
     `;
 
@@ -74,15 +89,51 @@ export async function trouverProduits({
     requete += ` AND s.taxonomy = $${paramIndex++}`;
     params.push(categorie);
   }
+  
+  // UNITE : ne garder que les produits ayant des données dans l'unité choisie
+  requete += ` AND ${COLONNES_NUTRIMENTS.calories[uniteValide]} IS NOT NULL`;
 
-  // TRI ALPHABETIQUE
+  // SEUILS NUTRITIONNELS (Min / Max)
+  const operateurs = [
+    ['Min', '>='],
+    ['Max', '<='],
+  ];
+
+  for (const nom of Object.keys(COLONNES_NUTRIMENTS)) {
+    const colonneNutriment = COLONNES_NUTRIMENTS[nom][uniteValide];
+
+    for (const [suffixe, operateur] of operateurs) {
+      const brut = filtres[`${nom}${suffixe}`];
+
+      if (brut === undefined || brut === '') {
+        continue;
+      }
+
+      const valeur = Number(brut);
+
+      if (!Number.isFinite(valeur) || valeur < 0) {
+        continue;
+      }
+
+      requete += ` AND ${colonneNutriment} ${operateur} $${paramIndex++}`;
+      params.push(valeur);
+    }
+  }
+
+  // TRI
   const colonnesTri = {
     az: 'm.title',
     marque: 'm.brand',
+    sodium: COLONNES_NUTRIMENTS.sodium[uniteValide],
+    calories: COLONNES_NUTRIMENTS.calories[uniteValide],
+    proteines: COLONNES_NUTRIMENTS.proteines[uniteValide],
   };
 
-  const colonne = colonnesTri[tri] ?? 'm.title';
-  requete += ` ORDER BY ${colonne} ASC`;
+  const colonne = Object.hasOwn(colonnesTri, tri)
+    ? colonnesTri[tri]
+    : 'm.title';
+  const sens = ordre === 'desc' ? 'DESC' : 'ASC';
+  requete += ` ORDER BY ${colonne} ${sens} NULLS LAST`;
 
   // LIMITE
   let nombre = parseInt(limit, 10);
